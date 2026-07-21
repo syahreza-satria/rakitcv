@@ -15,19 +15,13 @@ export default function Home() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-blue-200/20 dark:bg-blue-900/5 blur-[120px] pointer-events-none"></div>
 
         <div className="max-w-4xl flex flex-col items-center gap-6 relative z-10">
-          <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50/50 dark:border-blue-950/40 dark:bg-blue-950/20 px-3.5 py-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400">
-            <Sparkles size={12} className="animate-pulse" />
-            <span>100% Gratis & Tanpa Registrasi</span>
-          </div>
-
-          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight bg-gradient-to-r from-zinc-900 via-blue-950 to-zinc-900 dark:from-zinc-100 dark:via-blue-200 dark:to-zinc-100 bg-clip-text text-transparent leading-[1.15]">
+                    <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight bg-gradient-to-r from-zinc-900 via-blue-950 to-zinc-900 dark:from-zinc-100 dark:via-blue-200 dark:to-zinc-100 bg-clip-text text-transparent leading-[1.15]">
             Buat CV ATS-Friendly <br />
-            <span className="text-blue-600 dark:text-blue-400">Lolos Screening HRD</span>
           </h1>
 
           <p className="max-w-2xl text-base sm:text-lg leading-relaxed text-zinc-600 dark:text-zinc-400">
             Applicant Tracking System (ATS) adalah robot software penyaring CV otomatis. 
-            Gunakan aplikasi ini untuk menyusun data diri Anda secara terstruktur, menghasilkan CV berstandar global yang 100% ramah ATS.
+            Buat CV ATS-Friendly dengan aplikasi ini untuk menyusun data diri Anda secara terstruktur, menghasilkan CV berstandar global yang 100% ramah ATS.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center gap-4 mt-4 w-full justify-center">
