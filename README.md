@@ -1,4 +1,4 @@
-# CV ATS Builder
+# RakitCV
 
 A professional, modern web application designed to help job seekers build 100% Applicant Tracking System (ATS) compliant CVs. The builder restricts formatting to recruiter-approved guidelines (such as single-column layouts, standard typography, and clean text parsing) to ensure resumes successfully pass automated screening systems.
 
@@ -44,7 +44,7 @@ A professional, modern web application designed to help job seekers build 100% A
 
 ```
 ┌────────────────────────────────────────────────────────┐
-│  [ Back ]              CV ATS Builder      [ MODERN ]  │
+│  [ Back ]              RakitCV      [ MODERN ]  │
 ├──────────────────────────┬─────────────────────────────┤
 │                          │                             │
 │  1. Personal Info [x]    │        John Doe             │

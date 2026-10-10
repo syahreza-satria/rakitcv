@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useCV } from "../../lib/store";
+import { inputClasses, labelClasses } from "../../lib/ui";
 import { z } from "zod";
 import { X, Plus } from "lucide-react";
 
@@ -80,23 +81,24 @@ export default function SkillsForm() {
     setValue("softSkills", updated, { shouldValidate: true });
   };
 
+  const skillInputClasses = inputClasses.replace("w-full", "flex-1");
+
   const onSubmit = (data) => {
     setActiveStep(5);
   };
 
-  const inputClasses = "flex-1 rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-2.5 text-sm text-zinc-100 outline-none transition duration-200 placeholder:text-zinc-655 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10";
-  const labelClasses = "text-xs font-bold uppercase tracking-wider text-zinc-400";
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <div className="border-b border-zinc-800 pb-4">
-        <h3 className="text-md font-bold tracking-wide text-zinc-100">Keahlian (Skills)</h3>
+      <div className="border-b border-zinc-200 pb-4">
+        <h3 className="text-md font-bold tracking-wide text-zinc-900">Keahlian (Skills)</h3>
         <p className="text-xs text-zinc-500 mt-1">Ketik keahlian Anda lalu tekan Enter atau klik ikon + untuk menambahkan chip keahlian.</p>
       </div>
 
       {/* HARD SKILLS */}
       <div className="space-y-3">
         <label className={labelClasses}>Hard Skills / Keahlian Teknis (Minimal 1)</label>
+        <p className="text-xs leading-relaxed text-zinc-500">Satu keahlian per entri, tekan Enter untuk menambah. Pakai istilah yang muncul di lowongan, mis. React, SQL, Excel.</p>
         <div className="flex gap-2.5">
           <input
             type="text"
@@ -108,37 +110,37 @@ export default function SkillsForm() {
                 addHardSkill();
               }
             }}
-            placeholder="e.g. React, Next.js, SQL (tekan Enter)"
-            className={inputClasses}
+            placeholder="React, Next.js, SQL (tekan Enter)"
+            className={skillInputClasses}
           />
           <button
             type="button"
             onClick={addHardSkill}
-            className="rounded-xl bg-zinc-800 p-2.5 text-zinc-300 hover:bg-zinc-700 transition cursor-pointer"
+            className="rounded-xl bg-zinc-100 p-2.5 text-zinc-700 hover:bg-zinc-200 transition cursor-pointer"
           >
             <Plus size={20} />
           </button>
         </div>
-        {errors.hardSkills && <p className="text-xs text-red-400 font-semibold">{errors.hardSkills.message}</p>}
+        {errors.hardSkills && <p className="text-xs text-red-600 font-semibold">{errors.hardSkills.message}</p>}
 
         <div className="flex flex-wrap gap-2 pt-2">
           {hardSkills.map((skill, index) => (
             <span
               key={index}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-blue-500/10 px-3.5 py-1.5 text-xs font-bold text-blue-400 border border-blue-500/20"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-blue-500/10 px-3.5 py-1.5 text-xs font-bold text-blue-700 border border-blue-500/20"
             >
               {skill}
               <button
                 type="button"
                 onClick={() => removeHardSkill(skill)}
-                className="hover:text-blue-200 transition"
+                className="hover:text-blue-700 transition"
               >
                 <X size={12} />
               </button>
             </span>
           ))}
           {hardSkills.length === 0 && (
-            <p className="text-xs text-zinc-650 italic">Belum ada hard skill ditambahkan.</p>
+            <p className="text-xs text-zinc-500 italic">Belum ada hard skill ditambahkan.</p>
           )}
         </div>
       </div>
@@ -146,6 +148,7 @@ export default function SkillsForm() {
       {/* SOFT SKILLS */}
       <div className="space-y-3">
         <label className={labelClasses}>Soft Skills / Karakter Kerja (Opsional)</label>
+        <p className="text-xs leading-relaxed text-zinc-500">Pilih 3–5 yang paling relevan dengan posisi yang dilamar.</p>
         <div className="flex gap-2.5">
           <input
             type="text"
@@ -157,13 +160,13 @@ export default function SkillsForm() {
                 addSoftSkill();
               }
             }}
-            placeholder="e.g. Kepemimpinan, Komunikasi (tekan Enter)"
-            className={inputClasses}
+            placeholder="Kepemimpinan, Komunikasi (tekan Enter)"
+            className={skillInputClasses}
           />
           <button
             type="button"
             onClick={addSoftSkill}
-            className="rounded-xl bg-zinc-800 p-2.5 text-zinc-300 hover:bg-zinc-700 transition cursor-pointer"
+            className="rounded-xl bg-zinc-100 p-2.5 text-zinc-700 hover:bg-zinc-200 transition cursor-pointer"
           >
             <Plus size={20} />
           </button>
@@ -173,20 +176,20 @@ export default function SkillsForm() {
           {softSkills.map((skill, index) => (
             <span
               key={index}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-zinc-800 px-3.5 py-1.5 text-xs font-bold text-zinc-350 border border-zinc-700/50"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-zinc-100 px-3.5 py-1.5 text-xs font-bold text-zinc-700 border border-zinc-300"
             >
               {skill}
               <button
                 type="button"
                 onClick={() => removeSoftSkill(skill)}
-                className="hover:text-zinc-150 transition"
+                className="hover:text-zinc-900 transition"
               >
                 <X size={12} />
               </button>
             </span>
           ))}
           {softSkills.length === 0 && (
-            <p className="text-xs text-zinc-650 italic">Belum ada soft skill ditambahkan.</p>
+            <p className="text-xs text-zinc-500 italic">Belum ada soft skill ditambahkan.</p>
           )}
         </div>
       </div>
@@ -195,7 +198,7 @@ export default function SkillsForm() {
         <button
           type="button"
           onClick={() => setActiveStep(3)}
-          className="rounded-xl border border-zinc-800 px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-zinc-400 transition duration-200 hover:bg-zinc-850 hover:text-zinc-200 active:scale-95 cursor-pointer focus:outline-none"
+          className="rounded-xl border border-zinc-200 px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-zinc-600 transition duration-200 hover:bg-zinc-100 hover:text-zinc-800 active:scale-95 cursor-pointer focus:outline-none"
         >
           Kembali
         </button>

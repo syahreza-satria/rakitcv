@@ -1,372 +1,220 @@
 import React from "react";
-import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+import { Document, Page, Text, View, Link, Font, StyleSheet } from "@react-pdf/renderer";
+import { getTheme } from "../../lib/cvTokens";
+import { formatMonthYear } from "../../lib/dates";
+import {
+  SECTION_TITLES,
+  getContactItems,
+  getVisibleSections,
+  joinParts,
+  formatDateRange,
+  splitBullets,
+  hasExperience,
+  hasEducation,
+  educationTitle,
+  certificationLine,
+  languagesLine,
+} from "../../lib/cvContent";
 
-// Define Styles
-const styles = StyleSheet.create({
-  page: {
-    padding: "1.8cm",
-    fontSize: 9.5, // 9.5pt translates to a clear, legible size for ATS
-    lineHeight: 1.45,
-    color: "#27272a", // Zinc-800 for softer body text reading
-  },
-  
-  // Header
-  header: {
-    marginBottom: 16,
-  },
-  headerCenter: {
-    alignItems: "center",
-    textAlign: "center",
-  },
-  headerLeft: {
-    alignItems: "center",
-    textAlign: "center",
-  },
-  fullName: {
-    fontSize: 20,
-    letterSpacing: 1.2,
-    lineHeight: 1.2, // Explicit line height to prevent overlap
-    marginBottom: 4,  // Safe margin to push the title down
-  },
-  title: {
-    fontSize: 10,
-    letterSpacing: 1,
-    lineHeight: 1.2,
-  },
-  contactRow: {
-    marginTop: 6,
-    fontSize: 8.2,
-    color: "#71717a", // Zinc-500 for secondary contact info
-    lineHeight: 1.3,
-  },
-  contactLink: {
-    fontWeight: "bold",
-  },
-  dividerText: {
-    color: "#d4d4d8", // Light grey dot separators
-    fontWeight: "bold",
-  },
+// Template Modern memakai Inter (di-embed, subset Latin). Dua keluarga terpisah mengikuti
+// pola penamaan font bawaan (regular / -Bold) yang dipakai token.
+Font.register({ family: "Inter", src: "/fonts/inter-400.woff" });
+Font.register({ family: "Inter-Bold", src: "/fonts/inter-700.woff" });
+Font.registerHyphenationCallback((word) => [word]); // tanpa pemenggalan kata otomatis, agar teks tetap utuh di ATS
 
-  // Sections
-  section: {
-    marginBottom: 14,
-  },
-  sectionTitleClassic: {
-    fontSize: 10.5,
-    textAlign: "left",
-    borderBottomWidth: 0.75,
-    borderBottomColor: "#d4d4d8", // Thin zinc divider
-    paddingBottom: 3,
-    marginBottom: 8,
-    letterSpacing: 1.5,
-  },
-  sectionTitleModern: {
-    fontSize: 10.5,
-    borderLeftWidth: 2,
-    borderLeftColor: "#2563eb", // Blue accent border
-    paddingLeft: 6,
-    paddingTop: 1,
-    paddingBottom: 1,
-    marginBottom: 8,
-    letterSpacing: 1.5,
-  },
-
-  // Experience & Education entries
-  entry: {
-    marginBottom: 9,
-  },
-  entryHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  entryTitle: {
-    fontSize: 10,
-    color: "#09090b", // Rich dark headings
-  },
-  entryDate: {
-    fontSize: 8.5,
-    color: "#71717a",
-  },
-  entrySubHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 1,
-  },
-  entrySubtitle: {
-    color: "#3f3f46",
-    fontSize: 9,
-  },
-  entryLocation: {
-    fontSize: 8.5,
-    color: "#a1a1aa", // Soft location details
-  },
-  
-  // Bullet lists
-  bulletList: {
-    marginTop: 5,
-    paddingLeft: 6,
-  },
-  bulletItem: {
-    flexDirection: "row",
-    marginBottom: 2.5,
-  },
-  bulletPoint: {
-    width: 8,
-    fontSize: 9.5,
-    color: "#71717a",
-  },
-  bulletContent: {
-    flex: 1,
-    fontSize: 9,
-    color: "#3f3f46",
-    lineHeight: 1.4,
-  },
-
-  // Text details
-  summaryText: {
-    textAlign: "justify",
-    color: "#3f3f46",
-  },
-  skillsText: {
-    marginBottom: 4,
-  },
-  boldLabel: {
-    color: "#09090b",
-  },
-  normalValue: {
-    color: "#3f3f46",
-  },
-  certItem: {
-    flexDirection: "row",
-    marginBottom: 2.5,
-  },
-  langRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginTop: 2,
-  },
-  langItem: {
-    marginRight: 18,
-    flexDirection: "row",
-  }
-});
+// Gaya dibuat dari token tema (CV_DESIGN_SYSTEM.md). Tidak ada header/footer halaman,
+// tabel, ikon, atau posisi absolut: semua isi mengalir satu kolom.
+function createStyles(t) {
+  return StyleSheet.create({
+    page: {
+      padding: t.page.marginPt,
+      fontFamily: t.font.pdf,
+      fontSize: t.size.body,
+      lineHeight: t.leading.body,
+      color: t.color.text,
+      backgroundColor: "#FFFFFF",
+    },
+    header: { alignItems: t.headerAlign === "center" ? "center" : "flex-start" },
+    name: {
+      fontFamily: t.font.pdfBold,
+      fontSize: t.size.name,
+      lineHeight: t.leading.heading,
+      color: t.color.accent,
+    },
+    title: {
+      fontSize: t.size.title,
+      lineHeight: t.leading.heading,
+      marginTop: t.space.xs,
+    },
+    contact: {
+      fontSize: t.size.contact,
+      color: t.color.muted,
+      marginTop: t.space.sm,
+      textAlign: t.headerAlign,
+    },
+    link: { color: t.color.muted, textDecoration: "none" },
+    section: { marginTop: t.space.lg },
+    sectionTitle: {
+      fontFamily: t.font.pdfBold,
+      fontSize: t.size.section,
+      lineHeight: t.leading.heading,
+      letterSpacing: t.sectionLetterSpacing,
+      color: t.color.accent,
+      borderBottomWidth: t.rule,
+      borderBottomColor: t.color.rule,
+      borderBottomStyle: "solid",
+      paddingBottom: t.space.xs,
+      marginBottom: t.space.sectionGap,
+    },
+    entry: { marginBottom: t.space.md },
+    entryRow: { flexDirection: "row", justifyContent: "space-between" },
+    entryTitle: { flex: 1, fontFamily: t.font.pdfBold, fontSize: t.size.entryTitle },
+    date: { fontSize: t.size.meta, color: t.color.muted, marginLeft: t.space.md },
+    meta: {
+      fontFamily: t.metaItalic ? t.font.pdfItalic : t.font.pdf,
+      fontSize: t.size.meta,
+      color: t.color.muted,
+      marginTop: t.space.xs,
+    },
+    bullet: { flexDirection: "row", marginTop: t.space.sm },
+    bulletMark: { width: t.bulletIndent },
+    bulletText: { flex: 1 },
+    paragraph: { marginTop: t.space.sm },
+    label: { fontFamily: t.font.pdfBold },
+    line: { marginTop: t.space.xs },
+  });
+}
 
 export default function PDFTemplate({ data, templateId }) {
-  const { personalInfo, summary, experiences, educations, skills, certifications, languages } = data;
-  const isClassic = templateId === "classic";
+  const t = getTheme(templateId);
+  const s = createStyles(t);
+  const { personalInfo, summary, experiences = [], educations = [], skills, certifications = [], languages = [] } = data;
+  const show = getVisibleSections(data);
+  const contact = getContactItems(personalInfo);
 
-  const fontStyle = {
-    fontFamily: isClassic ? "Times-Roman" : "Helvetica",
-  };
-
-  const boldFont = isClassic ? "Times-Bold" : "Helvetica-Bold";
-  const italicFont = isClassic ? "Times-Italic" : "Helvetica-Oblique";
-
-  // Accent Colors:
-  // Classic: Slate-900 / Neutral Black
-  // Modern: Blue-900 (#1e3a8a) / Royal Blue
-  const nameColor = isClassic ? "#18181b" : "#1e3a8a";
-  const titleColor = isClassic ? "#52525b" : "#2563eb";
-  const accentTitleColor = isClassic ? "#18181b" : "#1e3a8a";
-  const linkColor = isClassic ? "#3f3f46" : "#1d4ed8";
-
-  // Build contact items array
-  const contactItems = [
-    personalInfo.email ? personalInfo.email : null,
-    personalInfo.phone ? personalInfo.phone : null,
-    personalInfo.location ? personalInfo.location : null,
-    personalInfo.linkedin ? personalInfo.linkedin.replace(/^https?:\/\/(www\.)?/, "") : null,
-    personalInfo.portfolio ? personalInfo.portfolio.replace(/^https?:\/\/(www\.)?/, "") : null,
-  ].filter(Boolean);
+  // minPresenceAhead: judul bagian tidak tertinggal sendirian di dasar halaman
+  const renderTitle = (children) => (
+    <Text style={s.sectionTitle} minPresenceAhead={48}>
+      {children}
+    </Text>
+  );
 
   return (
-    <Document title={`CV_${personalInfo.fullName.replace(/\s+/g, "_")}`} author={personalInfo.fullName}>
-      <Page size="A4" style={[styles.page, fontStyle]}>
-        
+    <Document title={`CV ${personalInfo.fullName || ""}`.trim()} author={personalInfo.fullName || undefined}>
+      <Page size="A4" style={s.page}>
         {/* HEADER */}
-        <View style={[styles.header, isClassic ? styles.headerCenter : styles.headerLeft]}>
-          <Text style={[styles.fullName, { fontFamily: boldFont, color: nameColor }]}>
-            {personalInfo.fullName ? personalInfo.fullName.toUpperCase() : "NAMA LENGKAP"}
-          </Text>
-          <Text style={[styles.title, { fontFamily: boldFont, color: titleColor }]}>
-            {personalInfo.title ? personalInfo.title.toUpperCase() : "PROFESI / JABATAN"}
-          </Text>
-          
-          {/* Render contacts in a single wrapped paragraph block to prevent layout bugs */}
-          <Text style={[styles.contactRow, { textAlign: "center" }]}>
-            {contactItems.map((item, idx) => {
-              const isLink = item === personalInfo.linkedin?.replace(/^https?:\/\/(www\.)?/, "") || 
-                             item === personalInfo.portfolio?.replace(/^https?:\/\/(www\.)?/, "");
-              
-              return (
-                <React.Fragment key={idx}>
-                  {idx > 0 && <Text style={styles.dividerText}>  •  </Text>}
-                  <Text style={isLink ? { fontFamily: boldFont, color: linkColor } : {}}>
-                    {item}
-                  </Text>
+        <View style={s.header}>
+          <Text style={s.name}>{(personalInfo.fullName || "").toUpperCase()}</Text>
+          {personalInfo.title ? <Text style={s.title}>{personalInfo.title}</Text> : null}
+          {contact.length > 0 && (
+            <Text style={s.contact}>
+              {contact.map((item, i) => (
+                <React.Fragment key={i}>
+                  {i > 0 ? " | " : ""}
+                  {item.href ? (
+                    <Link src={item.href} style={s.link}>
+                      {item.text}
+                    </Link>
+                  ) : (
+                    item.text
+                  )}
                 </React.Fragment>
-              );
-            })}
-          </Text>
+              ))}
+            </Text>
+          )}
         </View>
 
-        {/* RINGKASAN PROFIL */}
-        {summary && (
-          <View style={styles.section}>
-            <Text style={[
-              isClassic ? styles.sectionTitleClassic : styles.sectionTitleModern, 
-              { fontFamily: boldFont, color: accentTitleColor }
-            ]}>
-              RINGKASAN PROFIL
-            </Text>
-            <Text style={styles.summaryText}>{summary}</Text>
+        {/* RINGKASAN */}
+        {show.summary && (
+          <View style={s.section}>
+            {renderTitle(SECTION_TITLES.summary)}
+            <Text>{summary}</Text>
           </View>
         )}
 
         {/* PENGALAMAN KERJA */}
-        {experiences && experiences.length > 0 && experiences.some(e => e.company || e.position) && (
-          <View style={styles.section}>
-            <Text style={[
-              isClassic ? styles.sectionTitleClassic : styles.sectionTitleModern, 
-              { fontFamily: boldFont, color: accentTitleColor }
-            ]}>
-              PENGALAMAN KERJA
-            </Text>
-            {experiences.map((exp, index) => {
-              if (!exp.company && !exp.position) return null;
-              return (
-                <View key={index} style={styles.entry} wrap={false}>
-                  <View style={styles.entryHeader}>
-                    <Text style={[styles.entryTitle, { fontFamily: boldFont }]}>{exp.position || "Posisi / Jabatan"}</Text>
-                    <Text style={[styles.entryDate, { fontFamily: boldFont }]}>
-                      {exp.startDate || "Mulai"} – {exp.current ? "Sekarang" : (exp.endDate || "Selesai")}
-                    </Text>
+        {show.experience && (
+          <View style={s.section}>
+            {renderTitle(SECTION_TITLES.experience)}
+            {experiences.filter(hasExperience).map((exp, i) => (
+              <View key={i} style={s.entry}>
+                <View wrap={false}>
+                  <View style={s.entryRow}>
+                    <Text style={s.entryTitle}>{exp.position}</Text>
+                    <Text style={s.date}>{formatDateRange(exp.startDate, exp.endDate, exp.current)}</Text>
                   </View>
-                  <View style={styles.entrySubHeader}>
-                    <Text style={[styles.entrySubtitle, isClassic ? { fontFamily: italicFont } : { fontFamily: boldFont, color: "#52525b" }]}>
-                      {exp.company || "Perusahaan"}
-                    </Text>
-                    <Text style={styles.entryLocation}>{exp.location || "Lokasi"}</Text>
-                  </View>
-                  {exp.description && (
-                    <View style={styles.bulletList}>
-                      {exp.description.split("\n").filter(Boolean).map((bullet, idx) => (
-                        <View key={idx} style={styles.bulletItem}>
-                          <Text style={styles.bulletPoint}>•</Text>
-                          <Text style={styles.bulletContent}>{bullet}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  )}
+                  <Text style={s.meta}>{joinParts(exp.company, exp.location)}</Text>
                 </View>
-              );
-            })}
+                {splitBullets(exp.description).map((bullet, j) => (
+                  <View key={j} style={s.bullet}>
+                    <Text style={s.bulletMark}>•</Text>
+                    <Text style={s.bulletText}>{bullet}</Text>
+                  </View>
+                ))}
+              </View>
+            ))}
           </View>
         )}
 
         {/* PENDIDIKAN */}
-        {educations && educations.length > 0 && educations.some(e => e.institution || e.degree) && (
-          <View style={styles.section}>
-            <Text style={[
-              isClassic ? styles.sectionTitleClassic : styles.sectionTitleModern, 
-              { fontFamily: boldFont, color: accentTitleColor }
-            ]}>
-              PENDIDIKAN
-            </Text>
-            {educations.map((edu, index) => {
-              if (!edu.institution && !edu.degree) return null;
-              return (
-                <View key={index} style={styles.entry} wrap={false}>
-                  <View style={styles.entryHeader}>
-                    <Text style={[styles.entryTitle, { fontFamily: boldFont }]}>
-                      {edu.degree || "Jenjang"}{edu.major ? ` - ${edu.major}` : ""}
-                    </Text>
-                    <Text style={[styles.entryDate, { fontFamily: boldFont }]}>{edu.graduationDate || "Tahun Lulus"}</Text>
+        {show.education && (
+          <View style={s.section}>
+            {renderTitle(SECTION_TITLES.education)}
+            {educations.filter(hasEducation).map((edu, i) => (
+              <View key={i} style={s.entry}>
+                <View wrap={false}>
+                  <View style={s.entryRow}>
+                    <Text style={s.entryTitle}>{educationTitle(edu)}</Text>
+                    <Text style={s.date}>{formatMonthYear(edu.graduationDate)}</Text>
                   </View>
-                  <View style={styles.entrySubHeader}>
-                    <Text style={[styles.entrySubtitle, isClassic ? { fontFamily: italicFont } : { fontFamily: boldFont, color: "#52525b" }]}>
-                      {edu.institution || "Institusi"}
-                    </Text>
-                  </View>
-                  {edu.description && (
-                    <Text style={[styles.normalValue, { marginTop: 4, fontSize: 9, color: "#3f3f46" }]}>{edu.description}</Text>
-                  )}
+                  <Text style={s.meta}>{edu.institution}</Text>
                 </View>
-              );
-            })}
+                {edu.description ? <Text style={s.paragraph}>{edu.description}</Text> : null}
+              </View>
+            ))}
           </View>
         )}
 
         {/* KEAHLIAN */}
-        {skills && ((skills.hardSkills && skills.hardSkills.length > 0) || (skills.softSkills && skills.softSkills.length > 0)) && (
-          <View style={styles.section} wrap={false}>
-            <Text style={[
-              isClassic ? styles.sectionTitleClassic : styles.sectionTitleModern, 
-              { fontFamily: boldFont, color: accentTitleColor }
-            ]}>
-              KEAHLIAN (SKILLS)
-            </Text>
-            {skills.hardSkills && skills.hardSkills.length > 0 && (
-              <Text style={styles.skillsText}>
-                <Text style={[styles.boldLabel, { fontFamily: boldFont }]}>Hard Skills: </Text>
-                <Text style={styles.normalValue}>{skills.hardSkills.join(", ")}</Text>
+        {show.skills && (
+          <View style={s.section}>
+            {renderTitle(SECTION_TITLES.skills)}
+            {skills.hardSkills?.length > 0 && (
+              <Text>
+                <Text style={s.label}>Hard skill: </Text>
+                {skills.hardSkills.join(", ")}
               </Text>
             )}
-            {skills.softSkills && skills.softSkills.length > 0 && (
-              <Text style={styles.skillsText}>
-                <Text style={[styles.boldLabel, { fontFamily: boldFont }]}>Soft Skills: </Text>
-                <Text style={styles.normalValue}>{skills.softSkills.join(", ")}</Text>
+            {skills.softSkills?.length > 0 && (
+              <Text style={s.line}>
+                <Text style={s.label}>Soft skill: </Text>
+                {skills.softSkills.join(", ")}
               </Text>
             )}
           </View>
         )}
 
-        {/* SERTIFIKASI & PENGHARGAAN */}
-        {certifications && certifications.length > 0 && certifications.some(c => c.title) && (
-          <View style={styles.section} wrap={false}>
-            <Text style={[
-              isClassic ? styles.sectionTitleClassic : styles.sectionTitleModern, 
-              { fontFamily: boldFont, color: accentTitleColor }
-            ]}>
-              SERTIFIKASI & PENGHARGAAN
-            </Text>
-            {certifications.map((cert, index) => {
-              if (!cert.title) return null;
-              return (
-                <View key={index} style={styles.certItem}>
-                  <Text style={styles.bulletPoint}>•</Text>
-                  <Text style={styles.normalValue}>
-                    <Text style={{ fontFamily: boldFont, color: "#09090b" }}>{cert.title}</Text> – {cert.issuer} ({cert.date})
-                  </Text>
-                </View>
-              );
-            })}
+        {/* SERTIFIKASI */}
+        {show.certifications && (
+          <View style={s.section}>
+            {renderTitle(SECTION_TITLES.certifications)}
+            {certifications
+              .filter((c) => c.title)
+              .map((cert, i) => (
+                <Text key={i} style={i > 0 ? s.line : undefined}>
+                  {certificationLine(cert)}
+                </Text>
+              ))}
           </View>
         )}
 
         {/* BAHASA */}
-        {languages && languages.length > 0 && languages.some(l => l.name) && (
-          <View style={styles.section} wrap={false}>
-            <Text style={[
-              isClassic ? styles.sectionTitleClassic : styles.sectionTitleModern, 
-              { fontFamily: boldFont, color: accentTitleColor }
-            ]}>
-              BAHASA
-            </Text>
-            <View style={styles.langRow}>
-              {languages.map((lang, index) => {
-                if (!lang.name) return null;
-                return (
-                  <View key={index} style={styles.langItem}>
-                    <Text style={[styles.boldLabel, { fontFamily: boldFont }]}>{lang.name}: </Text>
-                    <Text style={styles.normalValue}>{lang.proficiency}</Text>
-                  </View>
-                );
-              })}
-            </View>
+        {show.languages && (
+          <View style={s.section}>
+            {renderTitle(SECTION_TITLES.languages)}
+            <Text>{languagesLine(languages)}</Text>
           </View>
         )}
-
       </Page>
     </Document>
   );

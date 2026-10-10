@@ -4,6 +4,7 @@ import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useCV } from "../../lib/store";
+import { inputClasses, labelClasses, hintClasses } from "../../lib/ui";
 import { PersonalInfoSchema } from "../../lib/schema";
 
 export default function PersonalInfoForm() {
@@ -35,86 +36,91 @@ export default function PersonalInfoForm() {
     setActiveStep(1);
   };
 
-  const inputClasses = "w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-2.5 text-sm text-zinc-100 outline-none transition duration-200 placeholder:text-zinc-655 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10";
-  const labelClasses = "text-xs font-bold uppercase tracking-wider text-zinc-400";
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <div className="border-b border-zinc-800 pb-4">
-        <h3 className="text-md font-bold tracking-wide text-zinc-100">Data Diri</h3>
+      <div className="border-b border-zinc-200 pb-4">
+        <h3 className="text-md font-bold tracking-wide text-zinc-900">Data Diri</h3>
         <p className="text-xs text-zinc-500 mt-1">Masukkan data diri lengkap Anda untuk header CV.</p>
       </div>
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-        <div className="space-y-2 sm:col-span-2">
+        <div className="flex flex-col gap-2 sm:col-span-2">
           <label className={labelClasses}>Nama Lengkap</label>
+          <p className={hintClasses}>Tulis sesuai KTP atau ijazah. Tampil dengan huruf kapital di bagian atas CV.</p>
           <input
             {...register("fullName")}
-            placeholder="e.g. Budi Santoso"
+            placeholder="John Doe"
             className={inputClasses}
           />
-          {errors.fullName && <p className="text-xs text-red-400 font-semibold">{errors.fullName.message}</p>}
+          {errors.fullName && <p className="text-xs text-red-600 font-semibold">{errors.fullName.message}</p>}
         </div>
 
-        <div className="space-y-2 sm:col-span-2">
+        <div className="flex flex-col gap-2 sm:col-span-2">
           <label className={labelClasses}>Profesi / Jabatan</label>
+          <p className={hintClasses}>Posisi yang Anda lamar atau profesi utama. Sebaiknya selaras dengan judul di lowongan.</p>
           <input
             {...register("title")}
-            placeholder="e.g. Senior Software Engineer"
+            placeholder="Frontend Developer"
             className={inputClasses}
           />
-          {errors.title && <p className="text-xs text-red-400 font-semibold">{errors.title.message}</p>}
+          {errors.title && <p className="text-xs text-red-600 font-semibold">{errors.title.message}</p>}
         </div>
 
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2">
           <label className={labelClasses}>Email</label>
+          <p className={hintClasses}>Gunakan email profesional yang memuat nama Anda.</p>
           <input
             type="email"
             {...register("email")}
-            placeholder="e.g. budi@email.com"
+            placeholder="john.doe@email.com"
             className={inputClasses}
           />
-          {errors.email && <p className="text-xs text-red-400 font-semibold">{errors.email.message}</p>}
+          {errors.email && <p className="text-xs text-red-600 font-semibold">{errors.email.message}</p>}
         </div>
 
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2">
           <label className={labelClasses}>Nomor Telepon</label>
+          <p className={hintClasses}>Nomor aktif (idealnya terhubung WhatsApp), mis. +62 812-3456-7890.</p>
           <input
             {...register("phone")}
-            placeholder="e.g. +62 812-3456-7890"
+            placeholder="+62 812-3456-7890"
             className={inputClasses}
           />
-          {errors.phone && <p className="text-xs text-red-400 font-semibold">{errors.phone.message}</p>}
+          {errors.phone && <p className="text-xs text-red-600 font-semibold">{errors.phone.message}</p>}
         </div>
 
-        <div className="space-y-2 sm:col-span-2">
+        <div className="flex flex-col gap-2 sm:col-span-2">
           <label className={labelClasses}>Lokasi (Kota, Negara)</label>
+          <p className={hintClasses}>Cukup kota dan negara. Alamat lengkap tidak diperlukan.</p>
           <input
             {...register("location")}
-            placeholder="e.g. Jakarta, Indonesia"
+            placeholder="Jakarta, Indonesia"
             className={inputClasses}
           />
-          {errors.location && <p className="text-xs text-red-400 font-semibold">{errors.location.message}</p>}
+          {errors.location && <p className="text-xs text-red-600 font-semibold">{errors.location.message}</p>}
         </div>
 
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2">
           <label className={labelClasses}>LinkedIn URL (Opsional)</label>
+          <p className={hintClasses}>Salin URL profil lengkap, diawali https://. Kosongkan bila tidak punya.</p>
           <input
             {...register("linkedin")}
-            placeholder="e.g. https://linkedin.com/in/username"
+            placeholder="https://linkedin.com/in/johndoe"
             className={inputClasses}
           />
-          {errors.linkedin && <p className="text-xs text-red-400 font-semibold">{errors.linkedin.message}</p>}
+          {errors.linkedin && <p className="text-xs text-red-600 font-semibold">{errors.linkedin.message}</p>}
         </div>
 
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2">
           <label className={labelClasses}>Portfolio / Website (Opsional)</label>
+          <p className={hintClasses}>Situs pribadi, GitHub, atau Behance, diawali https://.</p>
           <input
             {...register("portfolio")}
-            placeholder="e.g. https://mywebsite.com"
+            placeholder="https://johndoe.dev"
             className={inputClasses}
           />
-          {errors.portfolio && <p className="text-xs text-red-400 font-semibold">{errors.portfolio.message}</p>}
+          {errors.portfolio && <p className="text-xs text-red-600 font-semibold">{errors.portfolio.message}</p>}
         </div>
       </div>
 
