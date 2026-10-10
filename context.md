@@ -29,7 +29,7 @@ Ringkasan produk, arsitektur, dan konvensi proyek untuk developer/AI agent. Disu
 | PDF             | `@react-pdf/renderer` 4 (render di browser)                                                               |
 | Styling         | Tailwind CSS v4 (`@import "tailwindcss"` di [globals.css](src/app/globals.css), PostCSS)                  |
 | Ikon            | lucide-react                                                                                              |
-| Font            | Geist Sans/Mono via `next/font/google` (layout); PDF memakai font bawaan PDF                              |
+| Font            | Geist Sans/Mono via `next/font/google` (layout); PDF: Times (bawaan) dan Inter (di-embed)                             |
 | Lint            | ESLint 9 + `eslint-config-next` (`npm run lint`)                                                          |
 | Hosting         | Vercel (statis/edge), tanpa server aplikasi. Domain kustom belum ditentukan                               |
 | Analitik        | Tanpa cookie, hanya event agregat (belum dipasang; lihat §8)                                              |
@@ -44,19 +44,21 @@ Script: `npm run dev | build | start | lint`. Belum ada test.
 src/
 ├─ app/
 │  ├─ layout.js            Root layout: font, metadata, membungkus <CVProvider>
-│  ├─ page.js              Landing page (client component), CTA ke /builder
-│  ├─ globals.css          Tailwind + CSS variables light/dark
+│  ├─ page.js              Landing page (server component), CTA ke /builder
+│  ├─ globals.css          Tailwind + @font-face Inter, light only
+│  ├─ not-found.js, error.js   Halaman 404 dan error boundary
 │  └─ builder/
-│     ├─ page.js           Halaman editor (stepper + form + preview + kontrol)
+│     ├─ page.js           Halaman editor (stepper + form + preview + kontrol; PDF dimuat dinamis)
 │     └─ PDFDownloadButton.jsx   Tombol unduh via PDFDownloadLink
 ├─ components/
-│  ├─ form/                6 form step (Personal, Summary, Experience, Education, Skills, Additional)
-│  ├─ preview/CVPreview.jsx    Preview HTML A4 (Tailwind)
+│  ├─ form/                6 form step + MonthYearInput (date picker bulan/tahun)
+│  ├─ preview/CVPreview.jsx    Preview HTML A4 (inline style dari token, di-zoom agar muat kolom)
 │  └─ pdf/PDFTemplate.jsx      Dokumen @react-pdf (output sebenarnya)
 └─ lib/
    ├─ cvTokens.js          Token desain output CV (font, ukuran, warna, spasi per template)
    ├─ cvContent.js         Helper konten CV bersama preview & PDF (judul bagian, kontak, tanggal, bullet)
-   ├─ ui.js                Class input form bersama
+   ├─ dates.js             Format tanggal: nilai "YYYY-MM" -> "Feb 2026"
+   ├─ ui.js                Class input, label, dan petunjuk (hint) form bersama
    ├─ schema.js            Skema zod + defaultCVData
    └─ store.jsx            CVProvider/useCV (Context + localStorage) + DUMMY_DATA
 ```
@@ -89,15 +91,15 @@ certifications[]: { title, issuer, date }
 languages[]: { name, proficiency }
 ```
 
-Pesan error validasi dalam Bahasa Indonesia. Tanggal berupa string bebas (mis. "Januari 2023"), bukan tipe date. `endDate` wajib kecuali `current = true`. `description` pengalaman dipecah per baris (`\n`) menjadi bullet di preview/PDF.
+Pesan error validasi dalam Bahasa Indonesia. Tanggal (`startDate`, `endDate`, `graduationDate`, `date` sertifikat) disimpan sebagai string `YYYY-MM` dari `<input type="month">` dan ditampilkan di CV sebagai "Feb 2026" lewat [dates.js](src/lib/dates.js); `endDate` kosong bila `current`, dan CV menulis "Sekarang". `endDate` wajib kecuali `current = true`. `description` pengalaman dipecah per baris (`\n`) menjadi bullet di preview/PDF.
 
 ## 5. Komponen Utama
 
 - **[builder/page.js](src/app/builder/page.js)**: stepper 6 langkah (Data Diri → Ringkasan → Pengalaman → Pendidikan → Keahlian → Lainnya) dengan `switch(activeStep)` untuk memilih form; toggle template (Classic/Modern), tombol "Isi Contoh", "Reset", dan unduh PDF. Layout 2 kolom (form kiri, preview sticky kanan).
 - **Form components**: masing-masing memanggil `useForm` dengan `zodResolver` dan `defaultValues` dari `cvData`, lalu menyinkronkan ke context lewat `watch` (subscription untuk field array/skills; `watch()` + `useEffect` pada PersonalInfo/Additional). Tombol submit memvalidasi lalu `setActiveStep(n+1)`; tombol "Kembali" ke step sebelumnya. Experience/Education memakai `useFieldArray`; Skills memakai input chip dengan `setValue`.
-- **[CVPreview.jsx](src/components/preview/CVPreview.jsx)**: render HTML A4 (21cm, padding 1.8cm). Classic = serif/netral, Modern = sans/aksen biru.
-- **[PDFTemplate.jsx](src/components/pdf/PDFTemplate.jsx)**: `Document/Page` react-pdf dengan font bawaan (Times-Roman untuk classic, Helvetica untuk modern), tanpa font eksternal. Warna/aksen dibedakan per `templateId`. Nama file: `CV_<Nama_Lengkap>.pdf`.
-- **[PDFDownloadButton.jsx](src/app/builder/PDFDownloadButton.jsx)**: baru render `PDFDownloadLink` setelah mount (`isClient`) agar aman dari SSR.
+- **[CVPreview.jsx](src/components/preview/CVPreview.jsx)**: render HTML A4 (21cm, padding 1.8cm). Classic = Times/hitam, Modern = Inter/aksen biru. Lebar tetap 21cm, di kolom sempit halaman di-`zoom` otomatis (ResizeObserver).
+- **[PDFTemplate.jsx](src/components/pdf/PDFTemplate.jsx)**: `Document/Page` react-pdf dengan Times bawaan (classic) dan Inter yang di-embed dari `public/fonts` (modern, subset Latin, lisensi OFL). Gaya dibuat dari token di `cvTokens.js`. Warna/aksen dibedakan per `templateId`. Nama file: `CV_<Nama_Lengkap>.pdf`.
+- **[PDFDownloadButton.jsx](src/app/builder/PDFDownloadButton.jsx)**: dimuat lewat `next/dynamic` (`ssr: false`) dan hanya dirender bila `getCVIssues` kosong; kalau tidak, tombol nonaktif dan panel menampilkan bagian yang belum lengkap.
 
 ### Aturan output CV (preview dan PDF)
 
@@ -113,6 +115,7 @@ Pesan error validasi dalam Bahasa Indonesia. Tanggal berupa string bebas (mis. "
 - Output CV mengikuti [CV_DESIGN_SYSTEM.md](CV_DESIGN_SYSTEM.md). Ubah nilai visual hanya di `cvTokens.js` dan teks/format di `cvContent.js`; preview memakai inline style + `ptToPx`, bukan kelas Tailwind.
 - Perubahan tampilan harus dijaga konsisten antara `CVPreview.jsx` dan `PDFTemplate.jsx` (keduanya implementasi terpisah dari desain yang sama).
 - Menambah field CV: ubah `schema.js` (skema + `defaultCVData`), `DUMMY_DATA` di `store.jsx`, form terkait, `CVPreview`, dan `PDFTemplate`.
+- Form: setiap kolom punya petunjuk singkat (`hintClasses`, tampil di bawah input; pembungkus kolom harus `flex flex-col`). Placeholder memakai satu persona contoh ("John Doe"). Form di-mount ulang lewat `key={dataVersion}` saat "Isi Contoh"/"Reset".
 - Jangan menambahkan fitur yang mengirim data CV keluar browser. Analitik hanya boleh mencatat event agregat (buka editor, langkah selesai, unduh PDF), tanpa cookie dan tanpa isi CV atau data pribadi.
 - Muat `@react-pdf/renderer` secara dinamis bila memungkinkan agar editor tetap ringan.
 
@@ -131,7 +134,7 @@ Teramati dari kode (belum diverifikasi dengan menjalankan app). P0 memblokir ril
 | P1   | `lang="en"` padahal konten Indonesia; `globals.css` memaksa `font-family: Arial` menimpa Geist; [page.js](src/app/page.js) client component tanpa kebutuhan interaktif | `lang="id"`, hapus override font, jadikan landing server component                                                                 |
 | P1   | `name` di package.json masih `cv-maker`; README menyebut MIT tanpa file `LICENSE`; tanpa test, CI, halaman 404/error                                                   | Ganti ke `rakitcv`, tambah `LICENSE`, CI lint + build, halaman 404 dan error boundary                                              |
 
-Keterbatasan yang diterima: font bawaan PDF (Times/Helvetica) tidak mendukung karakter non-Latin.
+Keterbatasan yang diterima: font PDF (Times bawaan, Inter subset Latin) tidak mendukung karakter non-Latin; draf lama dengan tanggal teks bebas ditandai belum valid sampai tanggalnya dipilih ulang.
 
 ## 8. Roadmap
 
