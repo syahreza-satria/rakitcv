@@ -1,4 +1,8 @@
+import Image from "next/image";
 import Link from "next/link";
+import LandingAnimations from "@/components/landing/LandingAnimations";
+import FaqItem from "@/components/landing/FaqItem";
+import HeroBackdrop from "@/components/landing/HeroBackdrop";
 import {
   ArrowRight,
   CheckCircle2,
@@ -30,7 +34,7 @@ const STEPS = [
   {
     icon: Eye,
     title: "Lihat preview langsung",
-    text: "Setiap ketikan langsung tampil di halaman A4. Pilih template Classic atau Modern kapan saja.",
+    text: "Setiap ketikan langsung tampil di halaman A4. Pilih template ATS Korporat atau ATS Akademik kapan saja.",
   },
   {
     icon: Download,
@@ -48,7 +52,7 @@ const RULES = [
   {
     icon: FileText,
     title: "Font standar",
-    text: "Times (Classic) dan Inter (Modern) dengan ukuran isi yang nyaman dibaca, bukan gambar teks.",
+    text: "Inter (Korporat) dan Calibri (Akademik) dengan ukuran isi yang nyaman dibaca, bukan gambar teks.",
   },
   {
     icon: ShieldCheck,
@@ -60,6 +64,13 @@ const RULES = [
     title: "Judul bagian baku",
     text: "Ringkasan, Pengalaman Kerja, Pendidikan, Keahlian: istilah yang dikenali sistem ATS.",
   },
+];
+
+const SAMPLE_POINTS = [
+  "Satu kolom dengan urutan baca yang jelas dari atas ke bawah",
+  "Judul bagian baku: Ringkasan, Pengalaman Kerja, Pendidikan, Keahlian",
+  "Teks asli yang bisa diseleksi, bukan gambar",
+  "Tanpa foto, ikon, atau grafik yang membingungkan parser",
 ];
 
 const AVOIDED = ["Foto profil", "Ikon dan emoji", "Bar atau bintang keahlian", "Grafik dan kolom ganda"];
@@ -118,6 +129,7 @@ function MockCV() {
 export default function Home() {
   return (
     <div className="flex-1 flex flex-col bg-zinc-50 text-zinc-900">
+      <LandingAnimations />
       {/* NAV */}
       <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white/80 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
@@ -125,9 +137,6 @@ export default function Home() {
             Rakit<span className="text-blue-600">CV</span>
           </Link>
           <nav className="flex items-center gap-6 text-sm font-semibold text-zinc-600">
-            <a href="#cara-kerja" className="hidden sm:inline hover:text-zinc-900 transition">Cara Kerja</a>
-            <a href="#kaidah-ats" className="hidden sm:inline hover:text-zinc-900 transition">Kaidah ATS</a>
-            <a href="#faq" className="hidden sm:inline hover:text-zinc-900 transition">FAQ</a>
             <Link
               href="/builder"
               className="rounded-lg bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700"
@@ -141,8 +150,9 @@ export default function Home() {
       {/* HERO */}
       <section className="relative overflow-hidden px-6 py-16 sm:py-24">
         <div className="pointer-events-none absolute -top-24 left-1/2 h-[420px] w-[720px] -translate-x-1/2 rounded-full bg-blue-200/40 blur-[120px]" />
+        <HeroBackdrop />
         <div className="relative mx-auto grid max-w-6xl items-center gap-14 lg:grid-cols-2">
-          <div className="flex flex-col items-start gap-6">
+          <div data-hero-stagger className="flex flex-col items-start gap-6">
             <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-blue-700">
               Pembuat CV ATS-Friendly
             </span>
@@ -180,8 +190,51 @@ export default function Home() {
             </ul>
           </div>
 
-          <div className="flex justify-center lg:justify-end">
+          <div data-hero-visual className="flex justify-center lg:justify-end">
             <MockCV />
+          </div>
+        </div>
+      </section>
+
+      {/* CONTOH HASIL */}
+      <section className="border-y border-zinc-200 bg-white px-6 py-20">
+        <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-2">
+          <div data-reveal="left" className="flex justify-center">
+            <Image
+              src="/img/cv_example.png"
+              alt="Contoh hasil CV dari RakitCV: satu kolom, font Inter, judul bagian baku"
+              width={893}
+              height={1263}
+              sizes="(min-width: 1024px) 460px, 90vw"
+              className="w-full max-w-[460px] rounded-lg border border-zinc-200 shadow-2xl shadow-blue-900/10"
+            />
+          </div>
+          <div data-reveal="right">
+            <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-blue-700">
+              Contoh hasil nyata
+            </span>
+            <h2 className="mt-4 text-2xl font-bold tracking-tight sm:text-3xl">
+              Rapi untuk rekruter, terbaca utuh oleh ATS
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-zinc-600">
+              Ini CV yang dihasilkan RakitCV dengan template ATS Korporat. Setiap bagian punya judul baku dan urutan
+              yang konsisten, sehingga mudah dipindai manusia maupun sistem.
+            </p>
+            <ul className="mt-6 space-y-3">
+              {SAMPLE_POINTS.map((point) => (
+                <li key={point} className="flex items-start gap-2.5 text-sm text-zinc-700">
+                  <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-blue-600" />
+                  {point}
+                </li>
+              ))}
+            </ul>
+            <Link
+              href="/builder"
+              className="mt-8 inline-flex h-12 items-center gap-2 rounded-xl bg-blue-600 px-7 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 active:scale-95"
+            >
+              Buat CV seperti ini
+              <ArrowRight size={16} />
+            </Link>
           </div>
         </div>
       </section>
@@ -189,11 +242,11 @@ export default function Home() {
       {/* CARA KERJA */}
       <section id="cara-kerja" className="border-y border-zinc-200 bg-white px-6 py-20">
         <div className="mx-auto max-w-6xl">
-          <div className="mx-auto max-w-2xl text-center">
+          <div data-reveal className="mx-auto max-w-2xl text-center">
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Tiga langkah menuju CV siap kirim</h2>
             <p className="mt-3 text-sm text-zinc-600">Tidak perlu mengatur margin, font, atau tata letak sendiri.</p>
           </div>
-          <ol className="mt-12 grid gap-6 md:grid-cols-3">
+          <ol data-stagger className="mt-12 grid gap-6 md:grid-cols-3">
             {STEPS.map(({ icon: Icon, title, text }, i) => (
               <li key={title} className="relative rounded-2xl border border-zinc-200 bg-zinc-50 p-6">
                 <span className="absolute right-5 top-4 text-4xl font-extrabold text-zinc-200">{i + 1}</span>
@@ -211,7 +264,7 @@ export default function Home() {
       {/* KAIDAH ATS */}
       <section id="kaidah-ats" className="px-6 py-20">
         <div className="mx-auto max-w-6xl">
-          <div className="mx-auto max-w-2xl text-center">
+          <div data-reveal className="mx-auto max-w-2xl text-center">
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Mengapa CV harus ATS-friendly?</h2>
             <p className="mt-3 text-sm leading-relaxed text-zinc-600">
               Banyak perusahaan menyaring CV dengan perangkat lunak sebelum dibaca manusia. Susunan yang rumit bisa
@@ -219,7 +272,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div data-stagger className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {RULES.map(({ icon: Icon, title, text }) => (
               <div key={title} className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
@@ -231,7 +284,7 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="mt-8 rounded-2xl border border-zinc-200 bg-white p-6">
+          <div data-reveal className="mt-8 rounded-2xl border border-zinc-200 bg-white p-6">
             <p className="text-sm font-bold">Sengaja tidak ada di CV Anda:</p>
             <ul className="mt-3 flex flex-wrap gap-3">
               {AVOIDED.map((item) => (
@@ -251,31 +304,31 @@ export default function Home() {
       {/* TEMPLATE */}
       <section className="border-y border-zinc-200 bg-white px-6 py-20">
         <div className="mx-auto max-w-6xl">
-          <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Dua template, satu struktur</h2>
+          <div data-reveal className="mx-auto max-w-2xl text-center">
+            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Dua template, untuk dua kebutuhan</h2>
             <p className="mt-3 text-sm text-zinc-600">
-              Isi dan urutannya sama persis. Yang berbeda hanya font, warna aksen, dan perataan header.
+              Sama-sama satu kolom dan ramah ATS. Yang berbeda: font, margin, warna aksen, dan bagian yang tersedia.
             </p>
           </div>
-          <div className="mt-12 grid gap-6 md:grid-cols-2">
+          <div data-stagger className="mt-12 grid gap-6 md:grid-cols-2">
             <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6">
-              <p className="text-xl font-bold" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
-                Classic
+              <p className="text-xl font-bold" style={{ fontFamily: 'Calibri, Carlito, Arial, sans-serif' }}>
+                ATS Akademik
               </p>
-              <p className="mt-1 text-sm text-zinc-600">Font Times, aksen hitam, header rata tengah.</p>
+              <p className="mt-1 text-sm text-zinc-600">Font Calibri 11 pt, margin 1 inci, aksen hitam, header rata tengah, nomor halaman.</p>
               <p className="mt-4 flex items-start gap-2 text-sm text-zinc-700">
                 <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-blue-600" />
-                Cocok untuk hukum, keuangan, BUMN, dan akademik.
+                Cocok untuk beasiswa, studi S2/S3, dosen, dan lembaga penelitian. Ada bagian Minat Penelitian, Publikasi, dan Referensi.
               </p>
             </div>
             <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6">
               <p className="text-xl font-bold" style={{ fontFamily: "Inter, Helvetica, Arial, sans-serif" }}>
-                Modern
+                ATS Korporat
               </p>
-              <p className="mt-1 text-sm text-zinc-600">Font Inter, aksen biru, header rata kiri.</p>
+              <p className="mt-1 text-sm text-zinc-600">Font Inter 10 pt, margin rapat, aksen biru, header rata kiri.</p>
               <p className="mt-4 flex items-start gap-2 text-sm text-zinc-700">
                 <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-blue-600" />
-                Cocok untuk teknologi, startup, dan kreatif-korporat.
+                Cocok untuk perusahaan swasta, BUMN, startup, dan instansi. Ringkas, 1 sampai 2 halaman.
               </p>
             </div>
           </div>
@@ -286,15 +339,9 @@ export default function Home() {
       <section id="faq" className="px-6 py-20">
         <div className="mx-auto max-w-3xl">
           <h2 className="text-center text-2xl font-bold tracking-tight sm:text-3xl">Pertanyaan umum</h2>
-          <div className="mt-10 space-y-3">
+          <div data-stagger className="mt-10 space-y-3">
             {FAQ.map(({ q, a }) => (
-              <details key={q} className="group rounded-xl border border-zinc-200 bg-white p-5">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-bold">
-                  {q}
-                  <span className="text-lg font-normal text-zinc-400 transition group-open:rotate-45">+</span>
-                </summary>
-                <p className="mt-3 text-sm leading-relaxed text-zinc-600">{a}</p>
-              </details>
+              <FaqItem key={q} q={q} a={a} />
             ))}
           </div>
         </div>
@@ -302,7 +349,7 @@ export default function Home() {
 
       {/* CTA AKHIR */}
       <section className="px-6 pb-20">
-        <div className="mx-auto flex max-w-4xl flex-col items-center gap-5 rounded-3xl bg-blue-600 px-6 py-14 text-center text-white shadow-xl shadow-blue-600/20">
+        <div data-reveal className="mx-auto flex max-w-4xl flex-col items-center gap-5 rounded-3xl bg-blue-600 px-6 py-14 text-center text-white shadow-xl shadow-blue-600/20">
           <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Siap merakit CV Anda?</h2>
           <p className="max-w-lg text-sm text-blue-100">
             Gratis, tanpa akun, dan data Anda tidak keluar dari perangkat ini.

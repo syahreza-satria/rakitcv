@@ -10,12 +10,16 @@ import { ExperienceSchema } from "../../lib/schema";
 import { z } from "zod";
 import { Plus, Trash2 } from "lucide-react";
 
-const schema = z.object({
+const requiredSchema = z.object({
   experiences: z.array(ExperienceSchema).min(1, "Minimal harus ada 1 pengalaman kerja"),
 });
+const optionalSchema = z.object({ experiences: z.array(ExperienceSchema) });
+
+const isBlank = (e) => !e.company && !e.position && !e.location && !e.startDate && !e.endDate && !e.description;
 
 export default function ExperienceForm() {
-  const { cvData, setCvData, setActiveStep } = useCV();
+  const { cvData, setCvData, goNext, goBack, templateId } = useCV();
+  const optional = templateId === "academic"; // Akademik: pengalaman kerja tidak wajib
 
   const {
     register,
@@ -25,9 +29,9 @@ export default function ExperienceForm() {
     setValue,
     formState: { errors },
   } = useForm({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(optional ? optionalSchema : requiredSchema),
     defaultValues: {
-      experiences: cvData.experiences.length > 0 ? cvData.experiences : [
+      experiences: optional && cvData.experiences.every(isBlank) ? [] : cvData.experiences.length > 0 ? cvData.experiences : [
         { company: "", position: "", location: "", startDate: "", endDate: "", current: false, description: "" }
       ],
     },
@@ -58,7 +62,7 @@ export default function ExperienceForm() {
   }, [watch, cvData.experiences, setCvData]);
 
   const onSubmit = (data) => {
-    setActiveStep(3);
+    goNext();
   };
 
 
@@ -67,7 +71,7 @@ export default function ExperienceForm() {
       <div className="border-b border-zinc-200 pb-4 flex justify-between items-center">
         <div>
           <h3 className="text-md font-bold tracking-wide text-zinc-900">Pengalaman Kerja</h3>
-          <p className="text-xs text-zinc-500 mt-1">Tambahkan riwayat pekerjaan Anda. Gunakan bullet points di deskripsi.</p>
+          <p className="text-xs text-zinc-500 mt-1">Tambahkan riwayat pekerjaan Anda. Gunakan bullet points di deskripsi. Di CV, pengalaman otomatis diurutkan dari yang terbaru.</p>
         </div>
         <button
           type="button"
@@ -90,7 +94,7 @@ export default function ExperienceForm() {
           
           return (
             <div key={field.id} className="relative rounded-xl border border-zinc-200 bg-zinc-50 p-5 space-y-4">
-              {fields.length > 1 && (
+              {(optional || fields.length > 1) && (
                 <button
                   type="button"
                   onClick={() => remove(index)}
@@ -192,6 +196,11 @@ export default function ExperienceForm() {
                     placeholder="Masukkan poin-poin pencapaian Anda, pisahkan dengan baris baru (Enter).&#10;Contoh:&#10;Meningkatkan retensi pengguna sebesar 15% dengan membenahi bug UI.&#10;Mendesain pustaka komponen internal menggunakan Tailwind CSS."
                     className={textClasses}
                   />
+                  {watchedExperiences[index]?.description?.trim() && !/\d/.test(watchedExperiences[index].description) && (
+                    <p className="text-xs font-semibold text-amber-700">
+                      Belum ada angka atau data keberhasilan. Tambahkan fakta terukur, mis. persentase, jumlah pengguna, atau waktu.
+                    </p>
+                  )}
                   {errors.experiences?.[index]?.description && (
                     <p className="text-xs text-red-600 font-semibold">{errors.experiences[index].description.message}</p>
                   )}
@@ -205,7 +214,7 @@ export default function ExperienceForm() {
       <div className="flex justify-between pt-4">
         <button
           type="button"
-          onClick={() => setActiveStep(1)}
+          onClick={goBack}
           className="rounded-xl border border-zinc-200 px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-zinc-600 transition duration-200 hover:bg-zinc-100 hover:text-zinc-800 active:scale-95 cursor-pointer focus:outline-none"
         >
           Kembali

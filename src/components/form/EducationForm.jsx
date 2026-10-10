@@ -14,8 +14,20 @@ const schema = z.object({
   educations: z.array(EducationSchema).min(1, "Minimal harus ada 1 riwayat pendidikan"),
 });
 
+const EMPTY_EDUCATION = {
+  institution: "",
+  degree: "",
+  major: "",
+  graduationDate: "",
+  current: false,
+  description: "",
+  thesisTitle: "",
+  advisor: "",
+  gpa: "",
+};
+
 export default function EducationForm() {
-  const { cvData, setCvData, setActiveStep } = useCV();
+  const { cvData, setCvData, goNext, goBack, templateId } = useCV();
 
   const {
     register,
@@ -27,7 +39,7 @@ export default function EducationForm() {
     resolver: zodResolver(schema),
     defaultValues: {
       educations: cvData.educations.length > 0 ? cvData.educations : [
-        { institution: "", degree: "", major: "", graduationDate: "", current: false, description: "" }
+        EMPTY_EDUCATION
       ],
     },
   });
@@ -54,7 +66,7 @@ export default function EducationForm() {
   }, [watch, cvData.educations, setCvData]);
 
   const onSubmit = (data) => {
-    setActiveStep(4);
+    goNext();
   };
 
 
@@ -67,7 +79,7 @@ export default function EducationForm() {
         </div>
         <button
           type="button"
-          onClick={() => append({ institution: "", degree: "", major: "", graduationDate: "", current: false, description: "" })}
+          onClick={() => append(EMPTY_EDUCATION)}
           className="flex items-center gap-1.5 rounded-xl border border-blue-500/30 bg-blue-500/10 px-3.5 py-2 text-xs font-bold text-blue-700 hover:bg-blue-500/20 hover:border-blue-500/40 transition duration-200 cursor-pointer"
         >
           <Plus size={14} /> Tambah
@@ -112,7 +124,7 @@ export default function EducationForm() {
 
               <div className="flex flex-col gap-2">
                 <label className={labelClasses}>Jenjang Pendidikan</label>
-                <p className={hintClasses}>Mis. Sarjana (S1), Diploma (D3), atau SMA/SMK.</p>
+                <p className={hintClasses}>Tulis jenjang dan gelar yang diperoleh, mis. Sarjana Teknik (S.T.) atau SMA/SMK.</p>
                 <input
                   {...register(`educations.${index}.degree`)}
                   placeholder="Sarjana (S1)"
@@ -145,13 +157,41 @@ export default function EducationForm() {
                 )}
               </div>
 
+              <div className="flex flex-col gap-2">
+                <label className={labelClasses}>IPK (Opsional)</label>
+                <p className={hintClasses}>Sertakan skala, mis. 3,85/4,00.</p>
+                <input {...register(`educations.${index}.gpa`)} placeholder="3,85/4,00" className={inputClasses} />
+              </div>
+
+              {templateId === "academic" && (
+                <div className="flex flex-col gap-2">
+                  <label className={labelClasses}>Pembimbing (Opsional)</label>
+                  <p className={hintClasses}>Nama beserta gelar.</p>
+                  <input
+                    {...register(`educations.${index}.advisor`)}
+                    placeholder="Prof. Dr. Ahmad Fauzi, M.T."
+                    className={inputClasses}
+                  />
+                </div>
+              )}
+
               <div className="flex flex-col gap-2 sm:col-span-2">
-                <label className={labelClasses}>Deskripsi Tambahan / Prestasi / IPK (Opsional)</label>
-                <p className={hintClasses}>Isi hanya yang relevan: IPK, prestasi, atau organisasi.</p>
+                <label className={labelClasses}>Judul Skripsi / Tesis (Opsional)</label>
+                <p className={hintClasses}>Tulis judul lengkap dalam huruf kalimat.</p>
+                <input
+                  {...register(`educations.${index}.thesisTitle`)}
+                  placeholder="Prediksi Kunjungan Pasien Puskesmas Menggunakan Model Deret Waktu"
+                  className={inputClasses}
+                />
+              </div>
+
+              <div className="flex flex-col gap-2 sm:col-span-2">
+                <label className={labelClasses}>Prestasi / Organisasi (Opsional)</label>
+                <p className={hintClasses}>Isi hanya yang relevan, mis. penghargaan akademik atau organisasi.</p>
                 <textarea
                   {...register(`educations.${index}.description`)}
                   rows={3}
-                  placeholder="IPK 3.85/4.00. Aktif dalam organisasi mahasiswa dan memenangkan lomba karya tulis ilmiah."
+                  placeholder="Penerima Dean's List. Aktif dalam organisasi mahasiswa."
                   className={textClasses}
                 />
               </div>
@@ -163,7 +203,7 @@ export default function EducationForm() {
       <div className="flex justify-between pt-4">
         <button
           type="button"
-          onClick={() => setActiveStep(2)}
+          onClick={goBack}
           className="rounded-xl border border-zinc-200 px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-zinc-600 transition duration-200 hover:bg-zinc-100 hover:text-zinc-800 active:scale-95 cursor-pointer focus:outline-none"
         >
           Kembali

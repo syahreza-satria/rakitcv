@@ -11,13 +11,16 @@ import { X, Plus } from "lucide-react";
 const schema = z.object({
   hardSkills: z.array(z.string()).min(1, "Minimal masukkan 1 keahlian teknis"),
   softSkills: z.array(z.string()).optional().default([]),
+  researchMethods: z.array(z.string()).optional().default([]),
 });
 
 export default function SkillsForm() {
-  const { cvData, setCvData, setActiveStep } = useCV();
+  const { cvData, setCvData, goNext, goBack, templateId } = useCV();
+  const academic = templateId === "academic";
   
   const [hardInput, setHardInput] = useState("");
   const [softInput, setSoftInput] = useState("");
+  const [methodInput, setMethodInput] = useState("");
 
   const {
     handleSubmit,
@@ -31,13 +34,15 @@ export default function SkillsForm() {
 
   const hardSkills = watch("hardSkills") || [];
   const softSkills = watch("softSkills") || [];
+  const researchMethods = watch("researchMethods") || [];
 
   // Subscription-based live sync to CV Context (prevents render loops and stack overflows)
   useEffect(() => {
     const subscription = watch((value) => {
       if (value) {
         const hasSkillsChanged = JSON.stringify(value.hardSkills) !== JSON.stringify(cvData.skills.hardSkills) ||
-                                 JSON.stringify(value.softSkills) !== JSON.stringify(cvData.skills.softSkills);
+                                 JSON.stringify(value.softSkills) !== JSON.stringify(cvData.skills.softSkills) ||
+                                 JSON.stringify(value.researchMethods) !== JSON.stringify(cvData.skills.researchMethods);
         
         if (hasSkillsChanged) {
           setCvData((prev) => ({
@@ -45,6 +50,7 @@ export default function SkillsForm() {
             skills: {
               hardSkills: value.hardSkills || [],
               softSkills: value.softSkills || [],
+              researchMethods: value.researchMethods || [],
             },
           }));
         }
@@ -81,10 +87,22 @@ export default function SkillsForm() {
     setValue("softSkills", updated, { shouldValidate: true });
   };
 
+  const addMethod = () => {
+    const value = methodInput.trim();
+    if (value && !researchMethods.includes(value)) {
+      setValue("researchMethods", [...researchMethods, value], { shouldValidate: true });
+      setMethodInput("");
+    }
+  };
+
+  const removeMethod = (method) => {
+    setValue("researchMethods", researchMethods.filter((m) => m !== method), { shouldValidate: true });
+  };
+
   const skillInputClasses = inputClasses.replace("w-full", "flex-1");
 
   const onSubmit = (data) => {
-    setActiveStep(5);
+    goNext();
   };
 
 
@@ -97,7 +115,7 @@ export default function SkillsForm() {
 
       {/* HARD SKILLS */}
       <div className="space-y-3">
-        <label className={labelClasses}>Hard Skills / Keahlian Teknis (Minimal 1)</label>
+        <label className={labelClasses}>{academic ? "Perangkat Lunak / Keahlian Teknis (Minimal 1)" : "Hard Skills / Keahlian Teknis (Minimal 1)"}</label>
         <p className="text-xs leading-relaxed text-zinc-500">Satu keahlian per entri, tekan Enter untuk menambah. Pakai istilah yang muncul di lowongan, mis. React, SQL, Excel.</p>
         <div className="flex gap-2.5">
           <input
@@ -144,6 +162,49 @@ export default function SkillsForm() {
           )}
         </div>
       </div>
+
+      {/* METODE PENELITIAN (Akademik) */}
+      {academic && (
+        <div className="space-y-3">
+          <label className={labelClasses}>Metode Penelitian (Opsional)</label>
+          <p className="text-xs leading-relaxed text-zinc-500">Mis. analisis regresi, wawancara terstruktur, studi kasus.</p>
+          <div className="flex gap-2.5">
+            <input
+              type="text"
+              value={methodInput}
+              onChange={(e) => setMethodInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === ",") {
+                  e.preventDefault();
+                  addMethod();
+                }
+              }}
+              placeholder="Analisis deret waktu (tekan Enter)"
+              className={skillInputClasses}
+            />
+            <button
+              type="button"
+              onClick={addMethod}
+              className="rounded-xl bg-zinc-100 p-2.5 text-zinc-700 hover:bg-zinc-200 transition cursor-pointer"
+            >
+              <Plus size={20} />
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2 pt-2">
+            {researchMethods.map((method) => (
+              <span
+                key={method}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-blue-500/10 px-3.5 py-1.5 text-xs font-bold text-blue-700 border border-blue-500/20"
+              >
+                {method}
+                <button type="button" onClick={() => removeMethod(method)} className="hover:text-blue-700 transition">
+                  <X size={12} />
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* SOFT SKILLS */}
       <div className="space-y-3">
@@ -197,7 +258,7 @@ export default function SkillsForm() {
       <div className="flex justify-between pt-4">
         <button
           type="button"
-          onClick={() => setActiveStep(3)}
+          onClick={goBack}
           className="rounded-xl border border-zinc-200 px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-zinc-600 transition duration-200 hover:bg-zinc-100 hover:text-zinc-800 active:scale-95 cursor-pointer focus:outline-none"
         >
           Kembali

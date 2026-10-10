@@ -1,7 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { defaultCVData, parseDraft, DRAFT_VERSION } from "./schema";
+import { defaultCVData, parseDraft, DRAFT_VERSION, getSteps } from "./schema";
+import { DEFAULT_TEMPLATE, isTemplateId, migrateTemplateId } from "./cvTokens";
 
 const CVContext = createContext(null);
 
@@ -43,12 +44,33 @@ const DUMMY_DATA = {
       major: "Teknik Informatika",
       graduationDate: "2020-07",
       current: false,
-      description: "IPK 3.82/4.00. Juara 2 Hackathon Nasional 2019.",
+      description: "",
+      thesisTitle: "Optimasi Sistem Rekomendasi Berbasis Graph Neural Network",
+      advisor: "",
+      gpa: "3,82/4,00",
     },
   ],
+  volunteer: [
+    {
+      title: "Koordinator Program Mentoring",
+      institution: "Komunitas Code for Indonesia",
+      startDate: "2021-03",
+      endDate: "2022-12",
+      current: false,
+      description: "Mengoordinasi 25 mentor dan 60 peserta pada program belajar pemrograman gratis.",
+    },
+  ],
+  awards: [{ title: "Juara 2 Hackathon Nasional", issuer: "Kementerian Komunikasi dan Informatika", year: "2019" }],
+  researchInterests: "",
+  research: [],
+  publications: [],
+  teaching: [],
+  presentations: [],
+  references: [],
   skills: {
     hardSkills: ["JavaScript", "TypeScript", "React", "Next.js", "Node.js", "Express", "PostgreSQL", "Tailwind CSS", "Git"],
     softSkills: ["Kepemimpinan", "Kerjasama Tim", "Komunikasi", "Pemecahan Masalah"],
+    researchMethods: [],
   },
   certifications: [
     {
@@ -68,13 +90,122 @@ const DUMMY_DATA = {
   ],
 };
 
+// Data contoh untuk template Akademik
+const DUMMY_ACADEMIC_DATA = {
+  personalInfo: {
+    fullName: "Sari Wulandari",
+    title: "Kandidat Magister Sistem Informasi",
+    email: "sari.wulandari@email.com",
+    phone: "+62 813-5555-0101",
+    location: "Bandung, Indonesia",
+    linkedin: "https://linkedin.com/in/sariwulandari",
+    portfolio: "",
+    scholar: "https://orcid.org/0000-0000-0000-0000",
+  },
+  summary: "",
+  researchInterests:
+    "Sistem informasi kesehatan, analitik data pendidikan, dan penerapan machine learning untuk layanan publik di Indonesia.",
+  experiences: [
+    {
+      company: "Dinas Komunikasi dan Informatika Kota Bandung",
+      position: "Analis Data (Magang)",
+      location: "Bandung, Indonesia",
+      startDate: "2022-06",
+      endDate: "2022-12",
+      current: false,
+      description: "Membersihkan dan menganalisis data layanan publik untuk laporan triwulanan.\nMembangun dashboard Power BI yang dipakai 5 bidang.",
+    },
+  ],
+  educations: [
+    {
+      institution: "Institut Teknologi Bandung",
+      degree: "Magister (S2)",
+      major: "Sistem dan Teknologi Informasi",
+      graduationDate: "2026-08",
+      current: false,
+      description: "",
+      thesisTitle: "Prediksi Kunjungan Pasien Puskesmas Menggunakan Model Deret Waktu",
+      advisor: "Prof. Dr. Ir. Ahmad Fauzi, M.T.",
+      gpa: "3,92/4,00",
+    },
+    {
+      institution: "Universitas Padjadjaran",
+      degree: "Sarjana (S1)",
+      major: "Sistem Informasi",
+      graduationDate: "2024-07",
+      current: false,
+      description: "",
+      thesisTitle: "Sistem Rekomendasi Mata Kuliah Berbasis Content-Based Filtering",
+      advisor: "Dr. Rina Kusuma, S.Kom., M.Kom.",
+      gpa: "3,85/4,00",
+    },
+  ],
+  research: [
+    {
+      title: "Asisten Riset",
+      institution: "Laboratorium Data Science, ITB",
+      startDate: "2024-09",
+      endDate: "",
+      current: true,
+      description: "Mengumpulkan dan menyiapkan data kunjungan 40 puskesmas untuk model peramalan.\nMenulis kode analisis dengan Python dan mendokumentasikan metode untuk replikasi.",
+    },
+  ],
+  publications: [
+    {
+      citation:
+        "Wulandari, S., & Fauzi, A. (2025). Peramalan kunjungan pasien puskesmas dengan model SARIMA. Jurnal Sistem Informasi, 21(2), 101–114.",
+      year: "2025",
+    },
+    {
+      citation:
+        "Wulandari, S., & Kusuma, R. (2024). Sistem rekomendasi mata kuliah berbasis content-based filtering. Jurnal Teknologi Informasi, 9(1), 33–42.",
+      year: "2024",
+    },
+  ],
+  teaching: [
+    {
+      title: "Asisten Praktikum Basis Data",
+      institution: "Universitas Padjadjaran",
+      startDate: "2023-02",
+      endDate: "2023-12",
+      current: false,
+      description: "Membimbing 40 mahasiswa pada praktikum SQL dan normalisasi.",
+    },
+  ],
+  awards: [
+    { title: "Beasiswa Unggulan Pascasarjana", issuer: "Kementerian Pendidikan", year: "2024" },
+    { title: "Lulusan Terbaik Fakultas", issuer: "Universitas Padjadjaran", year: "2024" },
+  ],
+  volunteer: [],
+  presentations: [{ title: "Peramalan Kunjungan Pasien dengan SARIMA", event: "Seminar Nasional Informatika Kesehatan", year: "2025" }],
+  skills: {
+    hardSkills: ["Python", "R", "SQL", "SPSS", "Power BI"],
+    softSkills: ["Penulisan ilmiah", "Presentasi"],
+    researchMethods: ["Analisis deret waktu", "Regresi", "Wawancara terstruktur"],
+  },
+  certifications: [{ title: "IELTS Academic (Skor 7.0)", issuer: "British Council", date: "2024-03" }],
+  languages: [
+    { name: "Bahasa Indonesia", proficiency: "Penutur Asli" },
+    { name: "Bahasa Inggris", proficiency: "Profesional" },
+  ],
+  references: [
+    {
+      name: "Prof. Dr. Ir. Ahmad Fauzi, M.T.",
+      position: "Dosen Pembimbing",
+      institution: "Institut Teknologi Bandung",
+      email: "ahmad.fauzi@itb.example",
+      phone: "",
+    },
+  ],
+};
+
 const LOCAL_STORAGE_KEY = "cv_builder_draft";
 const TEMPLATE_STORAGE_KEY = "cv_builder_template";
 
 export function CVProvider({ children }) {
   const [cvData, setCvData] = useState(defaultCVData);
   const [activeStep, setActiveStep] = useState(0);
-  const [templateId, setTemplateId] = useState("modern");
+  const [templateId, setTemplateId] = useState(DEFAULT_TEMPLATE);
   const [isLoaded, setIsLoaded] = useState(false);
   // Naik setiap data diganti dari luar form (contoh/reset) agar form di-mount ulang dengan nilai baru
   const [dataVersion, setDataVersion] = useState(0);
@@ -93,8 +224,9 @@ export function CVProvider({ children }) {
         }
       }
       const savedTemplate = localStorage.getItem(TEMPLATE_STORAGE_KEY);
-      if (savedTemplate === "classic" || savedTemplate === "modern") {
-        setTemplateId(savedTemplate);
+      const migrated = migrateTemplateId(savedTemplate);
+      if (isTemplateId(migrated)) {
+        setTemplateId(migrated);
       }
     } catch (e) {
       console.error("Error loading CV draft:", e);
@@ -126,6 +258,18 @@ export function CVProvider({ children }) {
     }
   }, [templateId, isLoaded]);
 
+  const steps = getSteps(templateId);
+
+  // Pindah template: urutan langkah berbeda, jadi kembali ke langkah pertama
+  const changeTemplate = (id) => {
+    if (id === templateId) return;
+    setTemplateId(id);
+    setActiveStep(0);
+  };
+
+  const goNext = () => setActiveStep((s) => Math.min(s + 1, steps.length - 1));
+  const goBack = () => setActiveStep((s) => Math.max(s - 1, 0));
+
   const resetData = () => {
     setCvData(defaultCVData);
     setActiveStep(0);
@@ -133,7 +277,7 @@ export function CVProvider({ children }) {
   };
 
   const loadExampleData = () => {
-    setCvData(DUMMY_DATA);
+    setCvData(templateId === "academic" ? DUMMY_ACADEMIC_DATA : DUMMY_DATA);
     setDataVersion((v) => v + 1);
   };
 
@@ -145,7 +289,10 @@ export function CVProvider({ children }) {
         activeStep,
         setActiveStep,
         templateId,
-        setTemplateId,
+        setTemplateId: changeTemplate,
+        steps,
+        goNext,
+        goBack,
         resetData,
         loadExampleData,
         isLoaded,

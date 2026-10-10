@@ -1,103 +1,196 @@
 import React from "react";
 import { Document, Page, Text, View, Link, Font, StyleSheet } from "@react-pdf/renderer";
 import { getTheme } from "../../lib/cvTokens";
-import { formatMonthYear } from "../../lib/dates";
-import {
-  SECTION_TITLES,
-  getContactItems,
-  getVisibleSections,
-  joinParts,
-  formatDateRange,
-  splitBullets,
-  hasExperience,
-  hasEducation,
-  educationTitle,
-  certificationLine,
-  languagesLine,
-} from "../../lib/cvContent";
+import { getSections, getContactItems, cvFooterText } from "../../lib/cvContent";
 
-// Template Modern memakai Inter (di-embed, subset Latin). Dua keluarga terpisah mengikuti
-// pola penamaan font bawaan (regular / -Bold) yang dipakai token.
+// Template Korporat memakai Inter (di-embed, subset Latin). Tiap ketebalan didaftarkan sebagai
+// keluarga terpisah mengikuti nama yang dipakai token (regular / -SemiBold / -Bold).
 Font.register({ family: "Inter", src: "/fonts/inter-400.woff" });
+Font.register({ family: "Inter-SemiBold", src: "/fonts/inter-600.woff" });
 Font.register({ family: "Inter-Bold", src: "/fonts/inter-700.woff" });
+// Template Akademik memakai Calibri; yang di-embed Carlito (kembaran metrik Calibri, subset Latin, OFL)
+Font.register({ family: "Carlito", src: "/fonts/carlito-400.woff" });
+Font.register({ family: "Carlito-Bold", src: "/fonts/carlito-700.woff" });
+Font.register({ family: "Carlito-Italic", src: "/fonts/carlito-400-italic.woff" });
 Font.registerHyphenationCallback((word) => [word]); // tanpa pemenggalan kata otomatis, agar teks tetap utuh di ATS
 
-// Gaya dibuat dari token tema (CV_DESIGN_SYSTEM.md). Tidak ada header/footer halaman,
-// tabel, ikon, atau posisi absolut: semua isi mengalir satu kolom.
+// Semua angka berasal dari token tema (CV_DESIGN_SYSTEM.md). Spasi vertikal selalu `marginTop`
+// elemen berikutnya. Tidak ada tabel, ikon, atau posisi absolut untuk isi (footer nomor halaman
+// adalah satu-satunya elemen absolut dan hanya memuat nama + nomor halaman).
 function createStyles(t) {
   return StyleSheet.create({
     page: {
-      padding: t.page.marginPt,
+      paddingTop: t.page.top,
+      paddingBottom: t.page.bottom,
+      paddingLeft: t.page.left,
+      paddingRight: t.page.right,
       fontFamily: t.font.pdf,
       fontSize: t.size.body,
       lineHeight: t.leading.body,
       color: t.color.text,
       backgroundColor: "#FFFFFF",
     },
-    header: { alignItems: t.headerAlign === "center" ? "center" : "flex-start" },
-    name: {
-      fontFamily: t.font.pdfBold,
-      fontSize: t.size.name,
-      lineHeight: t.leading.heading,
-      color: t.color.accent,
-    },
-    title: {
-      fontSize: t.size.title,
-      lineHeight: t.leading.heading,
-      marginTop: t.space.xs,
-    },
+    header: { alignItems: t.header.align === "center" ? "center" : "flex-start" },
+    name: { fontFamily: t.font.pdfBold, fontSize: t.size.name, lineHeight: t.leading.heading, color: t.color.accent },
+    title: { fontSize: t.size.title, lineHeight: t.leading.heading, marginTop: t.header.nameToTitle },
     contact: {
       fontSize: t.size.contact,
       color: t.color.muted,
-      marginTop: t.space.sm,
-      textAlign: t.headerAlign,
+      marginTop: t.header.titleToContact,
+      textAlign: t.header.align,
+    },
+    headerRule: {
+      alignSelf: "stretch",
+      marginTop: t.header.titleToContact,
+      borderBottomWidth: t.header.ruleWidth,
+      borderBottomColor: t.color.rule,
+      borderBottomStyle: "solid",
     },
     link: { color: t.color.muted, textDecoration: "none" },
-    section: { marginTop: t.space.lg },
     sectionTitle: {
       fontFamily: t.font.pdfBold,
       fontSize: t.size.section,
       lineHeight: t.leading.heading,
-      letterSpacing: t.sectionLetterSpacing,
+      letterSpacing: t.tracking.section,
       color: t.color.accent,
-      borderBottomWidth: t.rule,
+      borderBottomWidth: t.section.ruleWidth,
       borderBottomColor: t.color.rule,
       borderBottomStyle: "solid",
-      paddingBottom: t.space.xs,
-      marginBottom: t.space.sectionGap,
+      paddingBottom: t.section.titleToRule,
     },
-    entry: { marginBottom: t.space.md },
+    content: { marginTop: t.section.ruleToContent },
     entryRow: { flexDirection: "row", justifyContent: "space-between" },
-    entryTitle: { flex: 1, fontFamily: t.font.pdfBold, fontSize: t.size.entryTitle },
-    date: { fontSize: t.size.meta, color: t.color.muted, marginLeft: t.space.md },
+    entryTitle: { flex: 1, fontFamily: t.font.pdfSemiBold, fontSize: t.size.entryTitle },
+    date: {
+      minWidth: t.entry.dateMinWidth,
+      marginLeft: t.entry.titleDateGap,
+      textAlign: "right",
+      fontSize: t.size.date,
+      color: t.color.muted,
+    },
     meta: {
-      fontFamily: t.metaItalic ? t.font.pdfItalic : t.font.pdf,
+      fontFamily: t.font.metaItalic ? t.font.pdfItalic : t.font.pdf,
       fontSize: t.size.meta,
       color: t.color.muted,
-      marginTop: t.space.xs,
+      marginTop: t.entry.titleToMeta,
     },
-    bullet: { flexDirection: "row", marginTop: t.space.sm },
-    bulletMark: { width: t.bulletIndent },
+    bullet: { flexDirection: "row" },
+    bulletMark: { width: t.bullet.indent, paddingLeft: t.bullet.hanging },
     bulletText: { flex: 1 },
-    paragraph: { marginTop: t.space.sm },
     label: { fontFamily: t.font.pdfBold },
-    line: { marginTop: t.space.xs },
+    bold: { fontFamily: t.font.pdfBold },
+    citation: {
+      fontSize: t.citation?.size,
+      paddingLeft: t.citation?.hangingIndent,
+      textIndent: -(t.citation?.hangingIndent || 0),
+    },
+    footer: {
+      position: "absolute",
+      bottom: t.page.footer?.offset,
+      left: t.page.left,
+      right: t.page.right,
+      textAlign: "center",
+      fontSize: t.page.footer?.size,
+      color: t.color.muted,
+    },
   });
 }
 
 export default function PDFTemplate({ data, templateId }) {
   const t = getTheme(templateId);
   const s = createStyles(t);
-  const { personalInfo, summary, experiences = [], educations = [], skills, certifications = [], languages = [] } = data;
-  const show = getVisibleSections(data);
-  const contact = getContactItems(personalInfo);
+  const { personalInfo } = data;
+  const contact = getContactItems(personalInfo, t.id);
+  const sections = getSections(data, t.id);
 
-  // minPresenceAhead: judul bagian tidak tertinggal sendirian di dasar halaman
-  const renderTitle = (children) => (
-    <Text style={s.sectionTitle} minPresenceAhead={48}>
-      {children}
-    </Text>
-  );
+  const gap = (i, value) => (i > 0 ? { marginTop: value } : undefined);
+
+  const renderBlock = (block) => {
+    switch (block.type) {
+      case "paragraph":
+        return <Text>{block.text}</Text>;
+      case "entries":
+        return block.entries.map((entry, i) => {
+          const body = [
+            ...entry.details.map((d) => ({ kind: "detail", ...d })),
+            ...entry.paragraphs.map((text) => ({ kind: "paragraph", text })),
+            ...entry.bullets.map((text) => ({ kind: "bullet", text })),
+          ];
+          return (
+            <View key={i} style={gap(i, t.entry.gap)}>
+              <View wrap={false}>
+                <View style={s.entryRow}>
+                  <Text style={s.entryTitle}>{entry.title}</Text>
+                  {entry.date ? <Text style={s.date}>{entry.date}</Text> : null}
+                </View>
+                {entry.meta ? <Text style={s.meta}>{entry.meta}</Text> : null}
+              </View>
+              {body.map((item, j) => {
+                const style = { marginTop: j === 0 ? t.entry.metaToBody : t.bullet.gap };
+                if (item.kind === "bullet") {
+                  return (
+                    <View key={j} style={[s.bullet, style]}>
+                      <Text style={s.bulletMark}>•</Text>
+                      <Text style={s.bulletText}>{item.text}</Text>
+                    </View>
+                  );
+                }
+                if (item.kind === "detail") {
+                  return (
+                    <Text key={j} style={style}>
+                      <Text style={s.label}>{item.label}: </Text>
+                      {item.value}
+                    </Text>
+                  );
+                }
+                return (
+                  <Text key={j} style={style}>
+                    {item.text}
+                  </Text>
+                );
+              })}
+            </View>
+          );
+        });
+      case "skills":
+        return block.lines.map((line, i) => (
+          <Text key={i} style={gap(i, t.bullet.gap)}>
+            <Text style={s.label}>{line.label}: </Text>
+            {line.text}
+          </Text>
+        ));
+      case "lines":
+        return block.lines.map((line, i) => (
+          <Text key={i} style={gap(i, t.bullet.gap)}>
+            {line}
+          </Text>
+        ));
+      case "citations":
+        return block.items.map((segments, i) => (
+          <View key={i} wrap={false} style={gap(i, t.citation.gap)}>
+            <Text style={s.citation}>
+              {segments.map((seg, j) => (
+                <Text key={j} style={seg.bold ? s.bold : undefined}>
+                  {seg.text}
+                </Text>
+              ))}
+            </Text>
+          </View>
+        ));
+      case "references":
+        return block.items.map((lines, i) => (
+          <View key={i} wrap={false} style={gap(i, t.citation?.gap ?? t.entry.gap)}>
+            {lines.map((line, j) => (
+              <Text key={j} style={j === 0 ? s.label : undefined}>
+                {line}
+              </Text>
+            ))}
+          </View>
+        ));
+      default:
+        return null;
+    }
+  };
 
   return (
     <Document title={`CV ${personalInfo.fullName || ""}`.trim()} author={personalInfo.fullName || undefined}>
@@ -122,98 +215,25 @@ export default function PDFTemplate({ data, templateId }) {
               ))}
             </Text>
           )}
+          {t.header.rule && <View style={s.headerRule} />}
         </View>
 
-        {/* RINGKASAN */}
-        {show.summary && (
-          <View style={s.section}>
-            {renderTitle(SECTION_TITLES.summary)}
-            <Text>{summary}</Text>
+        {/* BAGIAN: urutan dan judul dari getSections */}
+        {sections.map((section, i) => (
+          <View key={section.id} style={{ marginTop: i === 0 ? t.header.bottom : t.section.gap }}>
+            <Text style={s.sectionTitle} minPresenceAhead={t.section.minPresenceAhead}>
+              {section.title}
+            </Text>
+            <View style={s.content}>{renderBlock(section.block)}</View>
           </View>
-        )}
+        ))}
 
-        {/* PENGALAMAN KERJA */}
-        {show.experience && (
-          <View style={s.section}>
-            {renderTitle(SECTION_TITLES.experience)}
-            {experiences.filter(hasExperience).map((exp, i) => (
-              <View key={i} style={s.entry}>
-                <View wrap={false}>
-                  <View style={s.entryRow}>
-                    <Text style={s.entryTitle}>{exp.position}</Text>
-                    <Text style={s.date}>{formatDateRange(exp.startDate, exp.endDate, exp.current)}</Text>
-                  </View>
-                  <Text style={s.meta}>{joinParts(exp.company, exp.location)}</Text>
-                </View>
-                {splitBullets(exp.description).map((bullet, j) => (
-                  <View key={j} style={s.bullet}>
-                    <Text style={s.bulletMark}>•</Text>
-                    <Text style={s.bulletText}>{bullet}</Text>
-                  </View>
-                ))}
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* PENDIDIKAN */}
-        {show.education && (
-          <View style={s.section}>
-            {renderTitle(SECTION_TITLES.education)}
-            {educations.filter(hasEducation).map((edu, i) => (
-              <View key={i} style={s.entry}>
-                <View wrap={false}>
-                  <View style={s.entryRow}>
-                    <Text style={s.entryTitle}>{educationTitle(edu)}</Text>
-                    <Text style={s.date}>{formatMonthYear(edu.graduationDate)}</Text>
-                  </View>
-                  <Text style={s.meta}>{edu.institution}</Text>
-                </View>
-                {edu.description ? <Text style={s.paragraph}>{edu.description}</Text> : null}
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* KEAHLIAN */}
-        {show.skills && (
-          <View style={s.section}>
-            {renderTitle(SECTION_TITLES.skills)}
-            {skills.hardSkills?.length > 0 && (
-              <Text>
-                <Text style={s.label}>Hard skill: </Text>
-                {skills.hardSkills.join(", ")}
-              </Text>
-            )}
-            {skills.softSkills?.length > 0 && (
-              <Text style={s.line}>
-                <Text style={s.label}>Soft skill: </Text>
-                {skills.softSkills.join(", ")}
-              </Text>
-            )}
-          </View>
-        )}
-
-        {/* SERTIFIKASI */}
-        {show.certifications && (
-          <View style={s.section}>
-            {renderTitle(SECTION_TITLES.certifications)}
-            {certifications
-              .filter((c) => c.title)
-              .map((cert, i) => (
-                <Text key={i} style={i > 0 ? s.line : undefined}>
-                  {certificationLine(cert)}
-                </Text>
-              ))}
-          </View>
-        )}
-
-        {/* BAHASA */}
-        {show.languages && (
-          <View style={s.section}>
-            {renderTitle(SECTION_TITLES.languages)}
-            <Text>{languagesLine(languages)}</Text>
-          </View>
+        {t.page.footer && (
+          <Text
+            style={s.footer}
+            fixed
+            render={({ pageNumber, totalPages }) => cvFooterText(personalInfo.fullName, pageNumber, totalPages)}
+          />
         )}
       </Page>
     </Document>

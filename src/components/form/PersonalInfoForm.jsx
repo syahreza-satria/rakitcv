@@ -8,7 +8,7 @@ import { inputClasses, labelClasses, hintClasses } from "../../lib/ui";
 import { PersonalInfoSchema } from "../../lib/schema";
 
 export default function PersonalInfoForm() {
-  const { cvData, setCvData, setActiveStep } = useCV();
+  const { cvData, setCvData, goNext, templateId } = useCV();
   
   const {
     register,
@@ -33,7 +33,7 @@ export default function PersonalInfoForm() {
   }, [watchedValues, cvData.personalInfo, setCvData]);
 
   const onSubmit = (data) => {
-    setActiveStep(1);
+    goNext();
   };
 
 
@@ -47,7 +47,7 @@ export default function PersonalInfoForm() {
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <div className="flex flex-col gap-2 sm:col-span-2">
           <label className={labelClasses}>Nama Lengkap</label>
-          <p className={hintClasses}>Tulis sesuai KTP atau ijazah. Tampil dengan huruf kapital di bagian atas CV.</p>
+          <p className={hintClasses}>Tulis sesuai KTP atau ijazah, tanpa gelar (gelar ditulis di bagian Pendidikan). Tampil dengan huruf kapital di bagian atas CV.</p>
           <input
             {...register("fullName")}
             placeholder="John Doe"
@@ -122,6 +122,19 @@ export default function PersonalInfoForm() {
           />
           {errors.portfolio && <p className="text-xs text-red-600 font-semibold">{errors.portfolio.message}</p>}
         </div>
+
+        {templateId === "academic" && (
+          <div className="flex flex-col gap-2 sm:col-span-2">
+            <label className={labelClasses}>ORCID / Google Scholar (Opsional)</label>
+            <p className={hintClasses}>Tautan profil peneliti Anda, diawali https://. Tampil di baris kontak.</p>
+            <input
+              {...register("scholar")}
+              placeholder="https://orcid.org/0000-0000-0000-0000"
+              className={inputClasses}
+            />
+            {errors.scholar && <p className="text-xs text-red-600 font-semibold">{errors.scholar.message}</p>}
+          </div>
+        )}
       </div>
 
       <div className="flex justify-end pt-4">

@@ -8,11 +8,11 @@ import { inputClasses, labelClasses, hintClasses } from "../../lib/ui";
 import { z } from "zod";
 
 const schema = z.object({
-  summary: z.string().min(10, "Ringkasan profil minimal 10 karakter"),
+  summary: z.string().min(10, "Ringkasan profil minimal 10 karakter").max(600, "Ringkasan maksimal 600 karakter agar tetap ringkas"),
 });
 
 export default function SummaryForm() {
-  const { cvData, setCvData, setActiveStep } = useCV();
+  const { cvData, setCvData, goNext, goBack } = useCV();
 
   const {
     register,
@@ -37,7 +37,7 @@ export default function SummaryForm() {
   }, [watchedSummary, cvData.summary, setCvData]);
 
   const onSubmit = (data) => {
-    setActiveStep(2);
+    goNext();
   };
 
 
@@ -50,7 +50,7 @@ export default function SummaryForm() {
 
       <div className="flex flex-col gap-2">
         <label className={labelClasses}>Ringkasan Profesional</label>
-        <p className={hintClasses}>Tulis 3–4 kalimat: profesi dan lama pengalaman, keahlian utama, lalu satu pencapaian terukur. Hindari klaim umum seperti &quot;pekerja keras&quot; tanpa bukti.</p>
+        <p className={hintClasses}>Tulis langsung ke intinya dalam 3–4 kalimat (maks. 600 karakter): profesi dan lama pengalaman, keahlian utama, lalu satu pencapaian terukur. Hindari klaim umum seperti &quot;pekerja keras&quot; tanpa bukti.</p>
         <textarea
           {...register("summary")}
           rows={6}
@@ -63,7 +63,7 @@ export default function SummaryForm() {
       <div className="flex justify-between pt-4">
         <button
           type="button"
-          onClick={() => setActiveStep(0)}
+          onClick={goBack}
           className="rounded-xl border border-zinc-200 px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-zinc-600 transition duration-200 hover:bg-zinc-100 hover:text-zinc-800 active:scale-95 cursor-pointer focus:outline-none"
         >
           Kembali

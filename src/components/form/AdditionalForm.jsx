@@ -16,7 +16,7 @@ const schema = z.object({
 });
 
 export default function AdditionalForm() {
-  const { cvData, setCvData, setActiveStep } = useCV();
+  const { cvData, setCvData, goNext, goBack } = useCV();
   const [showSuccessToast, setShowSuccessToast] = useState(false);
 
   const {
@@ -221,7 +221,7 @@ export default function AdditionalForm() {
       <div className="flex justify-between pt-4">
         <button
           type="button"
-          onClick={() => setActiveStep(4)}
+          onClick={goBack}
           className="rounded-xl border border-zinc-200 px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-zinc-600 transition duration-200 hover:bg-zinc-100 hover:text-zinc-800 active:scale-95 cursor-pointer focus:outline-none"
         >
           Kembali

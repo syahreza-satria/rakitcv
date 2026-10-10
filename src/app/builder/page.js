@@ -10,9 +10,11 @@ import ExperienceForm from "../../components/form/ExperienceForm";
 import EducationForm from "../../components/form/EducationForm";
 import SkillsForm from "../../components/form/SkillsForm";
 import AdditionalForm from "../../components/form/AdditionalForm";
+import InterestsForm from "../../components/form/InterestsForm";
+import ListSectionsForm from "../../components/form/ListSectionsForm";
 import CVPreview from "../../components/preview/CVPreview";
-import { getCVIssues, STEP_TITLES } from "../../lib/schema";
-import { Sparkles, Trash2, ArrowLeft, Layers, Check, User, FileText, Briefcase, GraduationCap, Award, Languages, Download, AlertCircle } from "lucide-react";
+import { getCVIssues } from "../../lib/schema";
+import { Sparkles, Trash2, ArrowLeft, Layers, Check, User, FileText, Briefcase, GraduationCap, Award, Languages, Download, AlertCircle, BookOpen, FlaskConical, Trophy } from "lucide-react";
 
 // @react-pdf/renderer berat: dimuat hanya di browser dan hanya di halaman editor
 const PDFDownloadButton = dynamic(() => import("./PDFDownloadButton"), {
@@ -24,7 +26,18 @@ const PDFDownloadButton = dynamic(() => import("./PDFDownloadButton"), {
   ),
 });
 
-const STEP_ICONS = [User, FileText, Briefcase, GraduationCap, Award, Languages];
+const STEP_ICONS = {
+  personal: User,
+  summary: FileText,
+  interests: BookOpen,
+  experience: Briefcase,
+  education: GraduationCap,
+  academic: FlaskConical,
+  achievements: Trophy,
+  highlights: Trophy,
+  skills: Award,
+  additional: Languages,
+};
 
 export default function BuilderPage() {
   const { 
@@ -32,7 +45,8 @@ export default function BuilderPage() {
     activeStep, 
     setActiveStep, 
     templateId, 
-    setTemplateId, 
+    setTemplateId,
+    steps: stepDefs,
     loadExampleData, 
     resetData,
     isLoaded,
@@ -50,25 +64,33 @@ export default function BuilderPage() {
     );
   }
 
-  const steps = STEP_TITLES.map((title, i) => ({ title, icon: STEP_ICONS[i] }));
+  const steps = stepDefs.map(({ key, title }) => ({ key, title, icon: STEP_ICONS[key] }));
 
   // Validasi CVSchema penuh: menentukan status tiap langkah dan apakah PDF boleh diunduh
-  const issues = getCVIssues(cvData);
+  const issues = getCVIssues(cvData, templateId);
   const stepsWithIssues = new Set(issues.map((issue) => issue.step));
   const isComplete = issues.length === 0;
 
   // key=dataVersion: form di-mount ulang saat data diganti dari luar (Isi Contoh / Reset)
   const renderFormStep = () => {
-    switch (activeStep) {
-      case 1:
+    switch (steps[activeStep]?.key) {
+      case "summary":
         return <SummaryForm key={dataVersion} />;
-      case 2:
+      case "interests":
+        return <InterestsForm key={dataVersion} />;
+      case "experience":
         return <ExperienceForm key={dataVersion} />;
-      case 3:
+      case "education":
         return <EducationForm key={dataVersion} />;
-      case 4:
+      case "academic":
+        return <ListSectionsForm key={dataVersion} stepKey="academic" />;
+      case "achievements":
+        return <ListSectionsForm key={dataVersion} stepKey="achievements" />;
+      case "highlights":
+        return <ListSectionsForm key={dataVersion} stepKey="highlights" />;
+      case "skills":
         return <SkillsForm key={dataVersion} />;
-      case 5:
+      case "additional":
         return <AdditionalForm key={dataVersion} />;
       default:
         return <PersonalInfoForm key={dataVersion} />;
@@ -107,28 +129,23 @@ export default function BuilderPage() {
         <div className="flex items-center gap-3.5 flex-wrap">
           {/* Template Selector */}
           <div className="flex items-center bg-zinc-100 rounded-xl p-1 border border-zinc-200">
-            <button
-              onClick={() => setTemplateId("classic")}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all duration-200 ${
-                templateId === "classic"
-                  ? "bg-white text-zinc-900 shadow-sm border border-zinc-200"
-                  : "text-zinc-600 hover:text-zinc-900"
-              }`}
-            >
-              <Layers size={13} />
-              Classic (Serif)
-            </button>
-            <button
-              onClick={() => setTemplateId("modern")}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all duration-200 ${
-                templateId === "modern"
-                  ? "bg-white text-zinc-900 shadow-sm border border-zinc-200"
-                  : "text-zinc-600 hover:text-zinc-900"
-              }`}
-            >
-              <Sparkles size={13} />
-              Modern (Sans)
-            </button>
+            {[
+              { id: "corporate", label: "ATS Korporat", icon: Sparkles },
+              { id: "academic", label: "ATS Akademik", icon: Layers },
+            ].map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => setTemplateId(id)}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all duration-200 ${
+                  templateId === id
+                    ? "bg-white text-zinc-900 shadow-sm border border-zinc-200"
+                    : "text-zinc-600 hover:text-zinc-900"
+                }`}
+              >
+                <Icon size={13} />
+                {label}
+              </button>
+            ))}
           </div>
 
           {/* Load Sample Data */}
@@ -259,7 +276,7 @@ export default function BuilderPage() {
                       onClick={() => setActiveStep(step)}
                       className="rounded-lg border border-amber-300 bg-white px-2.5 py-1 font-semibold text-amber-800 hover:bg-amber-100 cursor-pointer"
                     >
-                      {STEP_TITLES[step]} ({issues.filter((i) => i.step === step).length})
+                      {steps[step]?.title} ({issues.filter((i) => i.step === step).length})
                     </button>
                   </li>
                 ))}

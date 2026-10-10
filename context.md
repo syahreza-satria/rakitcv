@@ -29,7 +29,7 @@ Ringkasan produk, arsitektur, dan konvensi proyek untuk developer/AI agent. Disu
 | PDF             | `@react-pdf/renderer` 4 (render di browser)                                                               |
 | Styling         | Tailwind CSS v4 (`@import "tailwindcss"` di [globals.css](src/app/globals.css), PostCSS)                  |
 | Ikon            | lucide-react                                                                                              |
-| Font            | Geist Sans/Mono via `next/font/google` (layout); PDF: Times (bawaan) dan Inter (di-embed)                             |
+| Font            | Geist Sans/Mono via `next/font/google` (layout); PDF: Carlito dan Inter (di-embed)                 |
 | Lint            | ESLint 9 + `eslint-config-next` (`npm run lint`)                                                          |
 | Hosting         | Vercel (statis/edge), tanpa server aplikasi. Domain kustom belum ditentukan                               |
 | Analitik        | Tanpa cookie, hanya event agregat (belum dipasang; lihat §8)                                              |
@@ -75,7 +75,7 @@ Form (react-hook-form, state lokal)
 ```
 
 - **Single source of truth**: `cvData` di `CVProvider` ([store.jsx](src/lib/store.jsx)). Nilai context: `cvData, setCvData, activeStep, setActiveStep, templateId, setTemplateId, resetData, loadExampleData, isLoaded`.
-- **Persistensi**: `localStorage` key `cv_builder_draft` (data) dan `cv_builder_template` (`"classic"` | `"modern"`, default `"modern"`). Dimuat di `useEffect` saat mount; penyimpanan hanya setelah `isLoaded` true. `activeStep` **tidak** dipersist.
+- **Persistensi**: `localStorage` key `cv_builder_draft` (data) dan `cv_builder_template` (`"corporate"` | `"academic"`, default `"corporate"`; nilai lama `modern`/`classic` dimigrasi). Dimuat di `useEffect` saat mount; penyimpanan hanya setelah `isLoaded` true. `activeStep` **tidak** dipersist. Langkah editor per template ada di `STEPS` (`schema.js`); form memakai `goNext`/`goBack` dari store.
 - Builder menampilkan spinner sampai `isLoaded` true (menghindari hydration mismatch).
 - **Rencana**: tambahkan field `version` pada draf agar migrasi skema aman, dan validasi dengan `safeParse` saat dimuat (lihat §7).
 
@@ -95,10 +95,10 @@ Pesan error validasi dalam Bahasa Indonesia. Tanggal (`startDate`, `endDate`, `g
 
 ## 5. Komponen Utama
 
-- **[builder/page.js](src/app/builder/page.js)**: stepper 6 langkah (Data Diri → Ringkasan → Pengalaman → Pendidikan → Keahlian → Lainnya) dengan `switch(activeStep)` untuk memilih form; toggle template (Classic/Modern), tombol "Isi Contoh", "Reset", dan unduh PDF. Layout 2 kolom (form kiri, preview sticky kanan).
+- **[builder/page.js](src/app/builder/page.js)**: stepper per template (Korporat 6 langkah; Akademik 8 langkah: Data Diri → Minat Penelitian → Pendidikan → Akademik → Pengalaman → Capaian → Keahlian → Lainnya) dengan `switch` pada key langkah untuk memilih form; toggle template (ATS Korporat/ATS Akademik), tombol "Isi Contoh", "Reset", dan unduh PDF. Layout 2 kolom (form kiri, preview sticky kanan).
 - **Form components**: masing-masing memanggil `useForm` dengan `zodResolver` dan `defaultValues` dari `cvData`, lalu menyinkronkan ke context lewat `watch` (subscription untuk field array/skills; `watch()` + `useEffect` pada PersonalInfo/Additional). Tombol submit memvalidasi lalu `setActiveStep(n+1)`; tombol "Kembali" ke step sebelumnya. Experience/Education memakai `useFieldArray`; Skills memakai input chip dengan `setValue`.
-- **[CVPreview.jsx](src/components/preview/CVPreview.jsx)**: render HTML A4 (21cm, padding 1.8cm). Classic = Times/hitam, Modern = Inter/aksen biru. Lebar tetap 21cm, di kolom sempit halaman di-`zoom` otomatis (ResizeObserver).
-- **[PDFTemplate.jsx](src/components/pdf/PDFTemplate.jsx)**: `Document/Page` react-pdf dengan Times bawaan (classic) dan Inter yang di-embed dari `public/fonts` (modern, subset Latin, lisensi OFL). Gaya dibuat dari token di `cvTokens.js`. Warna/aksen dibedakan per `templateId`. Nama file: `CV_<Nama_Lengkap>.pdf`.
+- **[CVPreview.jsx](src/components/preview/CVPreview.jsx)**: render HTML A4 (21cm, padding dari token margin). Akademik = Calibri (Carlito)/hitam, Korporat = Inter/aksen biru. Isi dan urutan bagian dari `getSections` ([cvContent.js](src/lib/cvContent.js)). Lebar tetap 21cm, di kolom sempit halaman di-`zoom` otomatis (ResizeObserver).
+- **[PDFTemplate.jsx](src/components/pdf/PDFTemplate.jsx)**: `Document/Page` react-pdf dengan Carlito (pengganti Calibri) yang di-embed (akademik, plus footer nomor halaman) dan Inter Regular/SemiBold/Bold yang di-embed dari `public/fonts` (korporat, subset Latin, lisensi OFL). Semua angka dari token di `cvTokens.js` (lihat CV_DESIGN_SYSTEM.md). Nama file: `CV_<Nama_Lengkap>.pdf`.
 - **[PDFDownloadButton.jsx](src/app/builder/PDFDownloadButton.jsx)**: dimuat lewat `next/dynamic` (`ssr: false`) dan hanya dirender bila `getCVIssues` kosong; kalau tidak, tombol nonaktif dan panel menampilkan bagian yang belum lengkap.
 
 ### Aturan output CV (preview dan PDF)
@@ -134,7 +134,7 @@ Teramati dari kode (belum diverifikasi dengan menjalankan app). P0 memblokir ril
 | P1   | `lang="en"` padahal konten Indonesia; `globals.css` memaksa `font-family: Arial` menimpa Geist; [page.js](src/app/page.js) client component tanpa kebutuhan interaktif | `lang="id"`, hapus override font, jadikan landing server component                                                                 |
 | P1   | `name` di package.json masih `cv-maker`; README menyebut MIT tanpa file `LICENSE`; tanpa test, CI, halaman 404/error                                                   | Ganti ke `rakitcv`, tambah `LICENSE`, CI lint + build, halaman 404 dan error boundary                                              |
 
-Keterbatasan yang diterima: font PDF (Times bawaan, Inter subset Latin) tidak mendukung karakter non-Latin; draf lama dengan tanggal teks bebas ditandai belum valid sampai tanggalnya dipilih ulang.
+Keterbatasan yang diterima: font PDF (Carlito dan Inter, subset Latin) tidak mendukung karakter non-Latin; draf lama dengan tanggal teks bebas ditandai belum valid sampai tanggalnya dipilih ulang.
 
 ## 8. Roadmap
 
